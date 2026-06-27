@@ -23,5 +23,8 @@
   "packageManager": "pnpm@11.9.0",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "lucide-react": "^1.21.0"
   }
 }

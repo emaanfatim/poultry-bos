@@ -1,4 +1,4 @@
-export type Locale = "en" | "ur";
+export type Locale = "en" | "ur" | "ne";
 
 export interface TranslationKeys {
   app: {

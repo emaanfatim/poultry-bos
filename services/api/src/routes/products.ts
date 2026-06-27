@@ -23,6 +23,7 @@ productRoutes.get("/", async (c) => {
       id: products.id,
       token: products.token,
       name: products.name,
+      imageKey: products.imageKey,
       unit: products.unit,
       currentPrice: products.currentPrice,
       status: products.status,

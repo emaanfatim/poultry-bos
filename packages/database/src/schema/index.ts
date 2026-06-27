@@ -103,23 +103,63 @@ export const products = pgTable(
   "products",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id),
+
     subCategoryId: uuid("sub_category_id")
       .notNull()
       .references(() => productSubCategories.id),
+
+    // Basic Information
     name: text("name").notNull(),
     token: text("token").notNull(),
+    description: text("description"),
+
+    // Product Image
+    imageKey: text("image_key"),
+
+    // Pricing
     unit: text("unit").notNull(),
-    currentPrice: decimal("current_price", { precision: 12, scale: 2 }).notNull(),
-    status: productStatusEnum("status").notNull().default("active"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    currentPrice: decimal("current_price", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+
+    // Display & Status
+    displayOrder: decimal("display_order", {
+      precision: 6,
+      scale: 0,
+    })
+      .notNull()
+      .default("0"),
+
+    status: productStatusEnum("status")
+      .notNull()
+      .default("active"),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
-    uniqueIndex("products_tenant_name_idx").on(table.tenantId, table.name),
-    uniqueIndex("products_tenant_token_idx").on(table.tenantId, table.token),
+    uniqueIndex("products_tenant_name_idx").on(
+      table.tenantId,
+      table.name,
+    ),
+    uniqueIndex("products_tenant_token_idx").on(
+      table.tenantId,
+      table.token,
+    ),
   ],
 );
 
@@ -166,4 +206,4 @@ export const transactionLineItems = pgTable("transaction_line_items", {
   rate: decimal("rate", { precision: 12, scale: 2 }).notNull(),
   lineTotal: decimal("line_total", { precision: 12, scale: 2 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}); 

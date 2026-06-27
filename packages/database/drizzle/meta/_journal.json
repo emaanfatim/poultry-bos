@@ -8,6 +8,13 @@
       "when": 1782394758309,
       "tag": "0000_wakeful_longshot",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782497858238,
+      "tag": "0001_neat_scrambler",
+      "breakpoints": true
     }
   ]
 }

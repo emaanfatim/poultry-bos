@@ -33,6 +33,7 @@ export interface Product {
   status: ProductStatus;
   categoryName: string;
   subCategoryName: string;
+  imageKey?: string | null; 
 }
 
 export interface CartLineItem {

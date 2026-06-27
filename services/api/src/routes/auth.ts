@@ -31,11 +31,18 @@ authRoutes.post("/login", async (c) => {
     .where(eq(users.username, username))
     .limit(1);
 
+    console.log("Login username:", username);
+    console.log("User found:", user);
+
   if (!user || !user.isActive) {
     return c.json({ error: "Invalid credentials" }, 401);
   }
 
   const valid = await bcrypt.compare(password, user.passwordHash);
+  console.log("Entered password:", password);
+  console.log("Hash:", user.passwordHash);
+  console.log("Password valid:", valid);
+  console.log("isActive:", user.isActive);
   if (!valid) {
     return c.json({ error: "Invalid credentials" }, 401);
   }

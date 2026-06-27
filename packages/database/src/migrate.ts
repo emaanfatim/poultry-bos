@@ -1,8 +1,16 @@
-import "dotenv/config";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
+import dotenv from "dotenv";
 import path from "node:path";
+
+import { migrate } from "drizzle-orm/node-postgres/migrator";
+
 import { fileURLToPath } from "node:url";
 import { createDb, closeDb } from "./index.js";
+
+dotenv.config({
+  path: path.resolve(process.cwd(), "../../.env"),
+});
+
+console.log("DATABASE_URL =", process.env.DATABASE_URL);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
