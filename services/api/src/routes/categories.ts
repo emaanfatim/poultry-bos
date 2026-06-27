@@ -5,7 +5,9 @@ import { productCategories, productSubCategories } from "@repo/database";
 import { getDb } from "../db";
 import { authMiddleware, requireOwner } from "../middleware/auth";
 
-export const categoryRoutes = new Hono();
+import type { AppVariables } from "../types";
+
+export const categoryRoutes = new Hono<{ Variables: AppVariables }>();
 
 // All routes require auth + owner role
 categoryRoutes.use("*", authMiddleware);

@@ -58,6 +58,7 @@ export function Header() {
           {navLink("/pos", t.nav.pos)}
           {isOwner && navLink("/prices", t.nav.prices)}
           {navLink("/summary", t.nav.summary)}
+          {isOwner && navLink("/dashboard/categories", "Categories")}
         </nav>
 
         {/* User Controls */}
