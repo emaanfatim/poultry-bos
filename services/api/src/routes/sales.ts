@@ -210,6 +210,7 @@ salesRoutes.get("/daily-summary", async (c) => {
       date: todayStart.toISOString().split("T")[0],
       totalRevenue: roundMoney(totalRevenue),
       transactionCount: todaySales.length,
+      avgOrderValue: todaySales.length > 0 ? roundMoney(totalRevenue / todaySales.length) : "0.00",
       productBreakdown: breakdown.map((row: {
         productId: string;
         productName: string;

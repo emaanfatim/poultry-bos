@@ -8,7 +8,6 @@ import { useI18n } from "../../providers/I18nProvider";
 export function Header() {
   const { user, tenant, branch, isOwner, logout } = useAuth();
   const { t, locale, setLocale } = useI18n();
-
   const pathname = usePathname();
   const router = useRouter();
 
@@ -19,7 +18,6 @@ export function Header() {
 
   const navLink = (href: string, label: string) => {
     const active = pathname === href;
-
     return (
       <Link
         href={href}
@@ -43,27 +41,20 @@ export function Header() {
   return (
     <header className="border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
-        {/* Logo / Business */}
         <div>
-          <h1 className="text-lg font-bold text-slate-900">
-            {t.app.title}
-          </h1>
+          <h1 className="text-lg font-bold text-slate-900">{t.app.title}</h1>
           <p className="text-xs text-slate-500">
             {tenant?.name} · {branch?.name}
           </p>
         </div>
 
-        {/* Navigation */}
         <nav className="flex flex-wrap items-center gap-1">
           {navLink("/pos", t.nav.pos)}
           {isOwner && navLink("/prices", t.nav.prices)}
           {navLink("/summary", t.nav.summary)}
-          {isOwner && navLink("/dashboard/categories", "Categories")}
         </nav>
 
-        {/* User Controls */}
         <div className="flex items-center gap-3">
-          {/* Language Switcher */}
           <div className="flex rounded-lg border border-slate-200 p-0.5 text-xs">
             {languages.map(({ code, label }) => (
               <button
@@ -80,13 +71,9 @@ export function Header() {
               </button>
             ))}
           </div>
-
-          {/* Logged-in User */}
           <span className="hidden text-sm text-slate-600 sm:inline">
             {user?.displayName}
           </span>
-
-          {/* Logout */}
           <button
             type="button"
             onClick={handleLogout}

@@ -47,6 +47,14 @@ export interface TranslationKeys {
     print: string;
     newSale: string;
     thankYou: string;
+    payment: string;
+    notes: string;
+    notesPlaceholder: string;
+    billType: string;
+    pricedBill: string;
+    deliveryNote: string;
+    pricedBillDesc: string;
+    deliveryNoteDesc: string;
   };
   prices: {
     title: string;

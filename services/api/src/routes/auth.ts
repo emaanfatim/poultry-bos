@@ -12,6 +12,17 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+function formatTenant(tenant: typeof tenants.$inferSelect) {
+  return {
+    id: tenant.id,
+    name: tenant.name,
+    currency: tenant.currency,
+    currencySymbol: tenant.currencySymbol,
+    address: tenant.address ?? null,
+    phone: tenant.phone ?? null,
+  };
+}
+
 export const authRoutes = new Hono();
 
 authRoutes.post("/login", async (c) => {
@@ -31,18 +42,11 @@ authRoutes.post("/login", async (c) => {
     .where(eq(users.username, username))
     .limit(1);
 
-    console.log("Login username:", username);
-    console.log("User found:", user);
-
   if (!user || !user.isActive) {
     return c.json({ error: "Invalid credentials" }, 401);
   }
 
   const valid = await bcrypt.compare(password, user.passwordHash);
-  console.log("Entered password:", password);
-  console.log("Hash:", user.passwordHash);
-  console.log("Password valid:", valid);
-  console.log("isActive:", user.isActive);
   if (!valid) {
     return c.json({ error: "Invalid credentials" }, 401);
   }
@@ -81,12 +85,7 @@ authRoutes.post("/login", async (c) => {
   return c.json({
     token,
     user: authUser,
-    tenant: {
-      id: tenant.id,
-      name: tenant.name,
-      currency: tenant.currency,
-      currencySymbol: tenant.currencySymbol,
-    },
+    tenant: formatTenant(tenant),
     branch: {
       id: branch.id,
       name: branch.name,
@@ -128,14 +127,7 @@ authRoutes.get("/me", async (c) => {
 
     return c.json({
       user,
-      tenant: tenant
-        ? {
-            id: tenant.id,
-            name: tenant.name,
-            currency: tenant.currency,
-            currencySymbol: tenant.currencySymbol,
-          }
-        : null,
+      tenant: tenant ? formatTenant(tenant) : null,
       branch: branch
         ? { id: branch.id, name: branch.name, token: branch.token }
         : null,

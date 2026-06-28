@@ -25,16 +25,16 @@ export default function PosPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const filteredProducts = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return products;
-    return products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(query) ||
-        p.token.toLowerCase().includes(query) ||
-        p.categoryName.toLowerCase().includes(query),
-    );
-  }, [products, search]);
-
+  const query = search.trim().toLowerCase();
+  if (!query) return products;
+  return products.filter(
+    (p) =>
+      p.name.toLowerCase().includes(query) ||
+      p.token.toLowerCase().includes(query) ||
+      p.categoryName.toLowerCase().includes(query) ||
+      p.subCategoryName.toLowerCase().includes(query), // ← added
+  );
+}, [products, search]);
   const handleConfirmPayment = async () => {
     if (!token || cart.items.length === 0) return;
     setIsProcessing(true);

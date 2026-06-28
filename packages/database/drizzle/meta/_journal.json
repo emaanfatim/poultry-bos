@@ -15,6 +15,20 @@
       "when": 1782497858238,
       "tag": "0001_neat_scrambler",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782575000000,
+      "tag": "0002_production_fixes",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782661219497,
+      "tag": "0003_lazy_bulldozer",
+      "breakpoints": true
     }
   ]
 }

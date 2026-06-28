@@ -1,27 +1,14 @@
-export type UserRole = "owner" | "cashier";
-
 export type ProductStatus = "active" | "inactive";
-
-export type TransactionStatus = "draft" | "completed" | "voided" | "refunded";
-
-export type TransactionType = "sale" | "purchase";
-
-export type PaymentMethod = "cash" | "mobile_wallet" | "card";
-
-export interface AuthUser {
-  id: string;
-  tenantId: string;
-  branchId: string;
-  username: string;
-  displayName: string;
-  role: UserRole;
-}
+export type UserRole = "owner" | "cashier";
+export type BillType = "priced" | "unpriced";
 
 export interface TenantConfig {
   id: string;
   name: string;
   currency: string;
   currencySymbol: string;
+  address?: string | null;
+  phone?: string | null;
 }
 
 export interface Product {
@@ -33,7 +20,7 @@ export interface Product {
   status: ProductStatus;
   categoryName: string;
   subCategoryName: string;
-  imageKey?: string | null; 
+  imageKey?: string | null;
 }
 
 export interface CartLineItem {
@@ -45,18 +32,8 @@ export interface CartLineItem {
   lineTotal: string;
 }
 
-export interface SaleLineItemInput {
-  productId: string;
-  quantity: number;
-}
-
-export interface CreateSaleRequest {
-  items: SaleLineItemInput[];
-  paymentMethod?: PaymentMethod;
-}
-
 export interface TransactionLineItem {
-  id: string;
+  id?: string;
   productId: string;
   productName: string;
   unit: string;
@@ -68,41 +45,24 @@ export interface TransactionLineItem {
 export interface Transaction {
   id: string;
   receiptNumber: string;
-  type: TransactionType;
-  status: TransactionStatus;
-  paymentMethod: PaymentMethod;
+  type: string;
+  status: string;
+  paymentMethod: string;
   subtotal: string;
   total: string;
+  notes?: string | null;
   createdAt: string;
-  createdByName: string;
+  createdByName?: string | null;
   lineItems: TransactionLineItem[];
 }
 
-export interface DailySummary {
-  date: string;
-  totalRevenue: string;
-  transactionCount: number;
-  productBreakdown: Array<{
-    productId: string;
-    productName: string;
-    totalQuantity: string;
-    unit: string;
-    totalRevenue: string;
-  }>;
-}
-
-export interface UpdateProductPriceRequest {
-  currentPrice: string;
-}
-
-export interface BulkPriceUpdate {
-  productId: string;
-  currentPrice: string;
-}
-
-export interface LoginRequest {
+export interface AuthUser {
+  id: string;
+  tenantId: string;
+  branchId: string;
   username: string;
-  password: string;
+  displayName: string;
+  role: UserRole;
 }
 
 export interface LoginResponse {
@@ -110,4 +70,24 @@ export interface LoginResponse {
   user: AuthUser;
   tenant: TenantConfig;
   branch: { id: string; name: string; token: string };
+}
+
+export interface CreateSaleRequest {
+  items: Array<{ productId: string; quantity: number }>;
+  paymentMethod?: string;
+  notes?: string;
+}
+
+export interface DailySummary {
+  date: string;
+  totalRevenue: string;
+  transactionCount: number;
+  avgOrderValue: string;
+  productBreakdown: Array<{
+    productId: string;
+    productName: string;
+    totalQuantity: string;
+    unit: string;
+    totalRevenue: string;
+  }>;
 }

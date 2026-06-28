@@ -12,11 +12,12 @@ export default function PricesPage() {
   const { token, isOwner } = useAuth();
   const { t } = useI18n();
   const router = useRouter();
+  const [originalPrices, setOriginalPrices] = useState<Record<string, string>>({});
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [products, setProducts] = useState<
+  const [products, setProducts] = useState
     Array<{ id: string; name: string; unit: string; currentPrice: string }>
   >([]);
 
@@ -27,7 +28,9 @@ export default function PricesPage() {
     fetchProducts(token)
       .then((data) => {
         setProducts(data);
-        setPrices(Object.fromEntries(data.map((p) => [p.id, p.currentPrice])));
+        const priceMap = Object.fromEntries(data.map((p) => [p.id, p.currentPrice]));
+        setPrices(priceMap);
+        setOriginalPrices(priceMap);
       })
       .finally(() => setIsLoading(false));
   }, [token, isOwner]);
@@ -52,19 +55,27 @@ export default function PricesPage() {
     );
   }
 
+  const changedProducts = products.filter(
+    (p) => prices[p.id] !== originalPrices[p.id]
+  );
+  const hasChanges = changedProducts.length > 0;
+
   const handleSave = async () => {
-    if (!token) return;
+    if (!token || !hasChanges) return;
     setIsSaving(true);
     setMessage(null);
     try {
       await updatePrices(
         token,
-        products.map((p) => ({
+        changedProducts.map((p) => ({
           productId: p.id,
           currentPrice: prices[p.id] ?? p.currentPrice,
         })),
       );
-      setMessage(t.prices.saved);
+      setOriginalPrices({ ...prices });
+      setMessage(
+        `${t.prices.saved} (${changedProducts.length} product${changedProducts.length !== 1 ? "s" : ""} updated)`
+      );
     } catch (err) {
       setMessage(err instanceof Error ? err.message : t.common.error);
     } finally {
@@ -96,24 +107,40 @@ export default function PricesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((product) => (
-                    <tr key={product.id} className="border-t border-slate-100">
-                      <td className="px-4 py-3 font-medium text-slate-900">{product.name}</td>
-                      <td className="px-4 py-3 text-slate-600">{product.unit}</td>
-                      <td className="px-4 py-3 text-end">
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={prices[product.id] ?? product.currentPrice}
-                          onChange={(e) =>
-                            setPrices((prev) => ({ ...prev, [product.id]: e.target.value }))
-                          }
-                          className="w-32 rounded-lg border border-slate-200 px-3 py-2 text-end outline-none focus:border-emerald-500"
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                  {products.map((product) => {
+                    const changed = prices[product.id] !== originalPrices[product.id];
+                    return (
+                      <tr
+                        key={product.id}
+                        className={`border-t border-slate-100 ${changed ? "bg-amber-50" : ""}`}
+                      >
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          {product.name}
+                          {changed && (
+                            <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">
+                              changed
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">{product.unit}</td>
+                        <td className="px-4 py-3 text-end">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={prices[product.id] ?? product.currentPrice}
+                            onChange={(e) => {
+                              setMessage(null);
+                              setPrices((prev) => ({ ...prev, [product.id]: e.target.value }));
+                            }}
+                            className={`w-32 rounded-lg border px-3 py-2 text-end outline-none focus:border-emerald-500 ${
+                              changed ? "border-amber-400" : "border-slate-200"
+                            }`}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -123,12 +150,20 @@ export default function PricesPage() {
             <button
               type="button"
               onClick={handleSave}
-              disabled={isSaving || isLoading}
-              className="rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+              disabled={isSaving || isLoading || !hasChanges}
+              className="rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSaving ? t.prices.saving : t.prices.save}
+              {isSaving
+                ? t.prices.saving
+                : hasChanges
+                  ? `${t.prices.save} (${changedProducts.length})`
+                  : t.prices.save}
             </button>
-            {message && <p className="text-sm text-emerald-700">{message}</p>}
+            {message && (
+              <p className={`text-sm ${message.includes("updated") ? "text-emerald-700" : "text-red-600"}`}>
+                {message}
+              </p>
+            )}
           </div>
         </main>
       </div>

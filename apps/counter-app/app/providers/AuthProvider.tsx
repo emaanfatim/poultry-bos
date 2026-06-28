@@ -28,6 +28,7 @@ interface AuthContextValue {
   branch: SessionData["branch"] | null;
   isLoading: boolean;
   isOwner: boolean;
+  sessionExpired: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -56,6 +57,7 @@ function saveSession(session: SessionData | null) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<SessionData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
     const stored = loadSession();
@@ -75,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         saveSession(null);
+        setSessionExpired(true);
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -89,11 +92,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     saveSession(nextSession);
     setSession(nextSession);
+    setSessionExpired(false);
   }, []);
 
   const logout = useCallback(() => {
     saveSession(null);
     setSession(null);
+    setSessionExpired(false);
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -104,10 +109,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       branch: session?.branch ?? null,
       isLoading,
       isOwner: session?.user.role === "owner",
+      sessionExpired,
       login,
       logout,
     }),
-    [session, isLoading, login, logout],
+    [session, isLoading, sessionExpired, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
