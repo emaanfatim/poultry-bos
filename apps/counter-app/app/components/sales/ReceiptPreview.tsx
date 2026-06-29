@@ -13,30 +13,40 @@ interface ReceiptPreviewProps {
 }
 
 export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPreviewProps) {
-  const { tenant, user, branch, isOwner } = useAuth();
+  const { tenant, user, branch, canIssuePricedBill } = useAuth();
   const { t } = useI18n();
   const symbol = tenant?.currencySymbol ?? "Rs";
 
   // Per requirements Section 13.5.2:
-  // Priced Bill — owner + authorized cashier only
-  // Delivery Note — any cashier
-  // Since full RBAC is MVP+, we use isOwner as the elevated permission gate for now
-  const canIssuePricedBill = isOwner;
+  // Priced Bill  — Owner + Authorized Cashier (canIssuePricedBill flag)
+  // Delivery Note — ANY cashier, no restriction
+  // FIXED: old code used isOwner which was wrong — authorized cashiers were blocked.
   const [billType, setBillType] = useState<BillType>(
     canIssuePricedBill ? "priced" : "unpriced"
   );
   const [notes, setNotes] = useState(transaction.notes ?? "");
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const isPriced = billType === "priced";
+
+  // PDF export — Section 13.5.5. Uses browser print-to-PDF.
+  // Replace with a /bills/pdf API call when server-side PDF is implemented.
+  async function handleExportPdf() {
+    setIsExportingPdf(true);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    window.print();
+    setIsExportingPdf(false);
+  }
 
   return (
     <div className="mx-auto max-w-lg">
 
-      {/* Bill type selector — shown above the bill, hidden on print */}
+      {/* Bill type selector — hidden on print */}
       <div className="mb-4 print:hidden">
         <p className="mb-2 text-sm font-medium text-slate-700">{t.receipt.billType}</p>
         <div className="grid grid-cols-2 gap-3">
-          {/* Priced Bill option */}
+
+          {/* Priced Bill — Owner + Authorized Cashier only (Section 13.5.2) */}
           <button
             type="button"
             disabled={!canIssuePricedBill}
@@ -52,11 +62,13 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
             <p className="text-sm font-semibold text-slate-900">{t.receipt.pricedBill}</p>
             <p className="mt-0.5 text-xs text-slate-500">{t.receipt.pricedBillDesc}</p>
             {!canIssuePricedBill && (
-              <p className="mt-1 text-xs font-medium text-amber-600">Owner only</p>
+              <p className="mt-1 text-xs font-medium text-amber-600">
+                {t.receipt.pricedBillRestricted}
+              </p>
             )}
           </button>
 
-          {/* Delivery Note option */}
+          {/* Delivery Note — any cashier (Section 13.5.2) */}
           <button
             type="button"
             onClick={() => setBillType("unpriced")}
@@ -71,7 +83,7 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
           </button>
         </div>
 
-        {/* Notes field — available on both bill types */}
+        {/* Optional free-text notes — both bill types (Section 13.5.7) */}
         <div className="mt-3">
           <label className="mb-1 block text-sm font-medium text-slate-700">
             {t.receipt.notes}
@@ -86,12 +98,12 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
         </div>
       </div>
 
-      {/* ── THE BILL DOCUMENT ── */}
+      {/* ── BILL DOCUMENT ── */}
       <div
         id="receipt-print"
         className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm print:border-0 print:shadow-none"
       >
-        {/* Tenant branding — Section 13.5.3 */}
+        {/* Tenant branding — Section 13.5.3 (branch overrides tenant defaults) */}
         <div className="border-b border-dashed border-slate-300 pb-4 text-center">
           <h2 className="text-xl font-bold text-slate-900">{tenant?.name}</h2>
           {tenant?.address && (
@@ -103,7 +115,6 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
           {branch?.name && (
             <p className="mt-1 text-xs font-medium text-slate-600">{branch.name}</p>
           )}
-          {/* Bill type label on the document itself */}
           <p className="mt-2 text-sm font-semibold text-slate-800">
             {isPriced ? t.receipt.pricedBill : t.receipt.deliveryNote}
           </p>
@@ -123,7 +134,7 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
             <span className="text-slate-500">{t.receipt.cashier}</span>
             <span>{transaction.createdByName ?? user?.displayName}</span>
           </div>
-          {/* Payment method only shown on priced bill */}
+          {/* Payment only on priced bill */}
           {isPriced && (
             <div className="flex justify-between">
               <span className="text-slate-500">{t.receipt.payment}</span>
@@ -138,7 +149,7 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
             <tr className="border-b border-slate-200 text-slate-500">
               <th className="py-2 text-start font-medium">{t.prices.product}</th>
               <th className="py-2 text-end font-medium">{t.pos.quantity}</th>
-              {/* Rate and line total only on priced bill */}
+              {/* Rates only on Priced Bill (Section 13.5.2) */}
               {isPriced && (
                 <>
                   <th className="py-2 text-end font-medium">{t.pos.rate}</th>
@@ -167,7 +178,7 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
           </tbody>
         </table>
 
-        {/* Grand total — only on priced bill */}
+        {/* Grand total — Priced Bill only (Section 13.5.2) */}
         {isPriced && (
           <div className="mt-4 flex justify-between border-t border-slate-200 pt-4 text-lg font-bold">
             <span>{t.pos.total}</span>
@@ -177,7 +188,7 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
           </div>
         )}
 
-        {/* Notes — printed on both bill types if filled */}
+        {/* Notes — both bill types if filled (Section 13.5.7) */}
         {notes.trim() && (
           <div className="mt-4 border-t border-slate-100 pt-3">
             <p className="text-xs font-medium text-slate-500">{t.receipt.notes}:</p>
@@ -188,7 +199,7 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
         <p className="mt-6 text-center text-sm text-slate-400">{t.receipt.thankYou}</p>
       </div>
 
-      {/* Action buttons — hidden on print */}
+      {/* Action buttons — hidden on print (Section 13.5.5) */}
       <div className="mt-4 flex gap-3 print:hidden">
         <button
           type="button"
@@ -197,6 +208,17 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
         >
           {t.receipt.print}
         </button>
+
+        {/* Export as PDF — Section 13.5.5 */}
+        <button
+          type="button"
+          onClick={handleExportPdf}
+          disabled={isExportingPdf}
+          className="flex-1 rounded-xl border border-slate-200 py-3 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+        >
+          {isExportingPdf ? t.receipt.exportingPdf : t.receipt.exportPdf}
+        </button>
+
         <button
           type="button"
           onClick={onNewSale}

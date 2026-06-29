@@ -54,26 +54,38 @@ async function main() {
 
   // ── Users ───────────────────────────────────────────────────────────────────
   const ownerHash = await bcrypt.hash("owner123", 10);
-  const cashierHash = await bcrypt.hash("cashier123", 10);
+const cashierHash = await bcrypt.hash("cashier123", 10);
+const authCashierHash = await bcrypt.hash("senior123", 10);
 
-  await db.insert(users).values([
-    {
-      tenantId: tenant!.id,
-      branchId: branch!.id,
-      username: "owner",
-      passwordHash: ownerHash,
-      displayName: "Shop Owner",
-      role: "owner",
-    },
-    {
-      tenantId: tenant!.id,
-      branchId: branch!.id,
-      username: "cashier",
-      passwordHash: cashierHash,
-      displayName: "Counter Cashier",
-      role: "cashier",
-    },
-  ]);
+await db.insert(users).values([
+  {
+    tenantId: tenant!.id,
+    branchId: branch!.id,
+    username: "owner",
+    passwordHash: ownerHash,
+    displayName: "Shop Owner",
+    role: "owner",
+    canIssuePricedBill: true,   // owners always have this
+  },
+  {
+    tenantId: tenant!.id,
+    branchId: branch!.id,
+    username: "cashier",
+    passwordHash: cashierHash,
+    displayName: "Counter Cashier",
+    role: "cashier",
+    canIssuePricedBill: false,  // standard cashier — delivery note only
+  },
+  {
+    tenantId: tenant!.id,
+    branchId: branch!.id,
+    username: "senior",
+    passwordHash: authCashierHash,
+    displayName: "Senior Cashier",
+    role: "cashier",
+    canIssuePricedBill: true,   // authorized cashier — can issue priced bills
+  },
+]);
 
   // ── Categories ───────────────────────────────────────────────────────────────
   //

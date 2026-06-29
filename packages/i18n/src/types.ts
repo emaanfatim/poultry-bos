@@ -40,22 +40,27 @@ export interface TranslationKeys {
     processing: string;
   };
   receipt: {
-    title: string;
-    receiptNo: string;
-    date: string;
-    cashier: string;
-    print: string;
-    newSale: string;
-    thankYou: string;
-    payment: string;
-    notes: string;
-    notesPlaceholder: string;
-    billType: string;
-    pricedBill: string;
-    deliveryNote: string;
-    pricedBillDesc: string;
-    deliveryNoteDesc: string;
-  };
+  title: string;
+  receiptNo: string;
+  date: string;
+  cashier: string;
+  print: string;
+  newSale: string;
+  thankYou: string;
+  payment: string;
+  notes: string;
+  notesPlaceholder: string;
+  billType: string;
+  pricedBill: string;
+  deliveryNote: string;
+  pricedBillDesc: string;
+  deliveryNoteDesc: string;
+  /** Shown on Priced Bill button when cashier lacks the authorized permission */
+  pricedBillRestricted: string;
+  /** Export as PDF button label — Section 13.5.5 */
+  exportPdf: string;
+  exportingPdf: string;
+};
   prices: {
     title: string;
     subtitle: string;

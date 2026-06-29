@@ -50,9 +50,13 @@ export const users = pgTable(
     passwordHash: text("password_hash").notNull(),
     displayName: text("display_name").notNull(),
     role: text("role", { enum: ["owner", "cashier"] })
-      .notNull()
-      .default("cashier"),
-    isActive: boolean("is_active").notNull().default(true),
+  .notNull()
+  .default("cashier"),
+// Elevated permission — per requirements Section 13.5.2 & 13.2.3:
+// "Authorized Cashier" can issue Priced Bills, process wholesale pricing, void, refund.
+// Owner always has this implicitly. For cashiers it must be explicitly granted.
+canIssuePricedBill: boolean("can_issue_priced_bill").notNull().default(false),
+isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

@@ -28,6 +28,7 @@ interface AuthContextValue {
   branch: SessionData["branch"] | null;
   isLoading: boolean;
   isOwner: boolean;
+  canIssuePricedBill: boolean;
   sessionExpired: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
@@ -109,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       branch: session?.branch ?? null,
       isLoading,
       isOwner: session?.user.role === "owner",
+      canIssuePricedBill: session?.user.canIssuePricedBill ?? false,
       sessionExpired,
       login,
       logout,
