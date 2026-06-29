@@ -1,10 +1,10 @@
-import dotenv from "dotenv";
+﻿import dotenv from "dotenv";
 import path from "node:path";
 
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 
 import { fileURLToPath } from "node:url";
-import { createDb, closeDb } from "./index.js";
+import { createDb, closeDb } from "./index.ts";
 
 dotenv.config({
   path: path.resolve(process.cwd(), "../../.env"),
@@ -25,3 +25,4 @@ main().catch((error) => {
   console.error("Migration failed:", error);
   process.exit(1);
 });
+

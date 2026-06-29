@@ -1,9 +1,9 @@
-import dotenv from "dotenv";
+﻿import dotenv from "dotenv";
 import path from "node:path";
 
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
-import { closeDb, createDb } from "./index.js";
+import { closeDb, createDb } from "./index.ts";
 import {
   branches,
   productCategories,
@@ -11,7 +11,7 @@ import {
   productSubCategories,
   tenants,
   users,
-} from "./schema/index.js";
+} from "./schema/index.ts";
 const result = dotenv.config({
     path: path.resolve(process.cwd(), "../../.env"),
   });
@@ -26,12 +26,12 @@ async function main() {
 
   const existing = await db.select().from(tenants).limit(1);
   if (existing.length > 0) {
-    console.log("Seed skipped — tenant already exists");
+    console.log("Seed skipped â€” tenant already exists");
     await closeDb();
     return;
   }
 
-  // ── Tenant & Branch ─────────────────────────────────────────────────────────
+  // â”€â”€ Tenant & Branch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [tenant] = await db
     .insert(tenants)
     .values({
@@ -52,10 +52,10 @@ async function main() {
     })
     .returning();
 
-  // ── Users ───────────────────────────────────────────────────────────────────
+  // â”€â”€ Users â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const ownerHash = await bcrypt.hash("owner123", 10);
 const cashierHash = await bcrypt.hash("cashier123", 10);
-const authCashierHash = await bcrypt.hash("senior123", 10);
+const backupCashierHash = await bcrypt.hash("senior123", 10);
 
 await db.insert(users).values([
   {
@@ -65,7 +65,6 @@ await db.insert(users).values([
     passwordHash: ownerHash,
     displayName: "Shop Owner",
     role: "owner",
-    canIssuePricedBill: true,   // owners always have this
   },
   {
     tenantId: tenant!.id,
@@ -74,30 +73,28 @@ await db.insert(users).values([
     passwordHash: cashierHash,
     displayName: "Counter Cashier",
     role: "cashier",
-    canIssuePricedBill: false,  // standard cashier — delivery note only
   },
   {
     tenantId: tenant!.id,
     branchId: branch!.id,
     username: "senior",
-    passwordHash: authCashierHash,
-    displayName: "Senior Cashier",
+    passwordHash: backupCashierHash,
+    displayName: "Backup Cashier",
     role: "cashier",
-    canIssuePricedBill: true,   // authorized cashier — can issue priced bills
   },
 ]);
 
-  // ── Categories ───────────────────────────────────────────────────────────────
+  // â”€â”€ Categories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   //
   // STRUCTURE:
-  //   Category  →  SubCategory  →  Products
+  //   Category  â†’  SubCategory  â†’  Products
   //
   //   "Finished Output Products"
-  //     ├── "Fresh Cuts"         → Leg Piece, Boneless, Curry Cut, Whole Bird
-  //     └── "Wings"              → Plain Wings, Chicken BBQ Wings, Teriyaki Wings
+  //     â”œâ”€â”€ "Fresh Cuts"         â†’ Leg Piece, Boneless, Curry Cut, Whole Bird
+  //     â””â”€â”€ "Wings"              â†’ Plain Wings, Chicken BBQ Wings, Teriyaki Wings
   //
   //   "Live Birds"
-  //     └── "Broiler"            → Broiler (Live), Broiler (Dressed)
+  //     â””â”€â”€ "Broiler"            â†’ Broiler (Live), Broiler (Dressed)
   //
   // The PRODUCT is what the cashier sells.
   // The SUB-CATEGORY groups related products (e.g. all wing styles together).
@@ -121,7 +118,7 @@ await db.insert(users).values([
     })
     .returning();
 
-  // ── Sub-Categories ───────────────────────────────────────────────────────────
+  // â”€â”€ Sub-Categories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const [subFreshCuts] = await db
     .insert(productSubCategories)
@@ -153,7 +150,7 @@ await db.insert(users).values([
     })
     .returning();
 
-  // ── Products ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Products â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   await db.insert(products).values([
     // Fresh Cuts
@@ -248,10 +245,10 @@ await db.insert(users).values([
   console.log("");
   console.log("  Category structure seeded:");
   console.log("  Finished Output Products");
-  console.log("    ├── Fresh Cuts  → Leg Piece, Boneless, Curry Cut, Whole Bird");
-  console.log("    └── Wings       → Plain Wings, Chicken BBQ Wings, Teriyaki Wings");
+  console.log("    â”œâ”€â”€ Fresh Cuts  â†’ Leg Piece, Boneless, Curry Cut, Whole Bird");
+  console.log("    â””â”€â”€ Wings       â†’ Plain Wings, Chicken BBQ Wings, Teriyaki Wings");
   console.log("  Live Birds");
-  console.log("    └── Broiler     → Broiler (Live), Broiler (Dressed)");
+  console.log("    â””â”€â”€ Broiler     â†’ Broiler (Live), Broiler (Dressed)");
   await closeDb();
 }
 
@@ -260,3 +257,4 @@ main().catch(async (error) => {
   await closeDb();
   process.exit(1);
 });
+

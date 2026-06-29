@@ -68,15 +68,14 @@ authRoutes.post("/login", async (c) => {
   }
 
   const authUser = {
-  id: user.id,
-  tenantId: user.tenantId,
-  branchId: user.branchId,
-  username: user.username,
-  displayName: user.displayName,
-  role: user.role,
-  // Owners always have this; for cashiers it comes from the DB flag (Section 13.5.2)
-  canIssuePricedBill: user.role === "owner" ? true : user.canIssuePricedBill,
-};
+    id: user.id,
+    tenantId: user.tenantId,
+    branchId: user.branchId,
+    username: user.username,
+    displayName: user.displayName,
+    role: user.role,
+    canIssuePricedBill: true,
+  };
   const token = await new SignJWT({ user: authUser, branchToken: branch.token })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -105,14 +104,14 @@ authRoutes.get("/me", async (c) => {
   try {
     const { payload } = await jwtVerify(header.slice(7), getJwtSecret());
     const user = payload.user as {
-  id: string;
-  tenantId: string;
-  branchId: string;
-  username: string;
-  displayName: string;
-  role: "owner" | "cashier";
-  canIssuePricedBill: boolean;
-};
+      id: string;
+      tenantId: string;
+      branchId: string;
+      username: string;
+      displayName: string;
+      role: "owner" | "cashier";
+      canIssuePricedBill?: boolean;
+    };
 
     const db = getDb();
     const [tenant] = await db
@@ -128,7 +127,7 @@ authRoutes.get("/me", async (c) => {
       .limit(1);
 
     return c.json({
-      user,
+      user: { ...user, canIssuePricedBill: true },
       tenant: tenant ? formatTenant(tenant) : null,
       branch: branch
         ? { id: branch.id, name: branch.name, token: branch.token }

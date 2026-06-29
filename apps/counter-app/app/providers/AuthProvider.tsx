@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       branch: session?.branch ?? null,
       isLoading,
       isOwner: session?.user.role === "owner",
-      canIssuePricedBill: session?.user.canIssuePricedBill ?? false,
+      canIssuePricedBill: Boolean(session?.user),
       sessionExpired,
       login,
       logout,

@@ -63,8 +63,7 @@ export interface AuthUser {
   username: string;
   displayName: string;
   role: UserRole;
-  /** Elevated permission — can issue Priced Bills and process wholesale/registered-tier transactions.
-   *  Always true for owners; explicitly granted per cashier. (Section 13.5.2, 13.2.3, 13.16) */
+  /** Billing access is true for every logged-in owner/cashier. */
   canIssuePricedBill: boolean;
 }
 
@@ -73,6 +72,11 @@ export interface LoginResponse {
   user: AuthUser;
   tenant: TenantConfig;
   branch: { id: string; name: string; token: string };
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
 }
 
 export interface CreateSaleRequest {

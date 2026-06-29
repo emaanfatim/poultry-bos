@@ -1,4 +1,4 @@
-import {
+﻿import {
   boolean,
   numeric,
   pgTable,
@@ -45,17 +45,13 @@ export const users = pgTable(
     branchId: uuid("branch_id")
       .notNull()
       .references(() => branches.id),
-    // username unique per tenant — two different shops can have the same username
+    // username unique per tenant â€” two different shops can have the same username
     username: text("username").notNull(),
     passwordHash: text("password_hash").notNull(),
     displayName: text("display_name").notNull(),
     role: text("role", { enum: ["owner", "cashier"] })
   .notNull()
   .default("cashier"),
-// Elevated permission — per requirements Section 13.5.2 & 13.2.3:
-// "Authorized Cashier" can issue Priced Bills, process wholesale pricing, void, refund.
-// Owner always has this implicitly. For cashiers it must be explicitly granted.
-canIssuePricedBill: boolean("can_issue_priced_bill").notNull().default(false),
 isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -123,7 +119,7 @@ export const products = pgTable(
       .notNull()
       .default("active"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    // tracks when price was last changed — required for price history reporting
+    // tracks when price was last changed â€” required for price history reporting
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -142,7 +138,7 @@ export const transactions = pgTable(
     branchId: uuid("branch_id")
       .notNull()
       .references(() => branches.id),
-    // receipt number unique per tenant — two tenants can have the same receipt number string
+    // receipt number unique per tenant â€” two tenants can have the same receipt number string
     receiptNumber: text("receipt_number").notNull(),
     type: text("type", { enum: ["sale", "purchase"] }).notNull().default("sale"),
     status: text("status", { enum: ["completed", "voided", "refunded"] })
@@ -154,7 +150,7 @@ export const transactions = pgTable(
     subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull().default("0"),
     total: numeric("total", { precision: 10, scale: 2 }).notNull().default("0"),
     notes: text("notes"),
-    // void tracking — required by requirements doc Section 13.3.5
+    // void tracking â€” required by requirements doc Section 13.3.5
     voidedAt: timestamp("voided_at", { withTimezone: true }),
     voidedBy: uuid("voided_by").references(() => users.id),
     voidReason: text("void_reason"),
@@ -180,7 +176,7 @@ export const transactionLineItems = pgTable("transaction_line_items", {
   productId: uuid("product_id")
     .notNull()
     .references(() => products.id),
-  // stored at time of sale — never changes even if product is renamed/repriced
+  // stored at time of sale â€” never changes even if product is renamed/repriced
   productName: text("product_name").notNull(),
   unit: text("unit").notNull(),
   quantity: numeric("quantity", { precision: 10, scale: 3 }).notNull(),
