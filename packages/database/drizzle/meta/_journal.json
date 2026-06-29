@@ -29,6 +29,13 @@
       "when": 1782661219497,
       "tag": "0003_lazy_bulldozer",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782747619497,
+      "tag": "0004_billing_permissions",
+      "breakpoints": true
     }
   ]
 }
