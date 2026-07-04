@@ -89,8 +89,39 @@ export default function SummaryPage() {
                 </div>
               </div>
 
+              {/* Bill type breakdown */}
+              {summary.billTypeBreakdown && (
+                <div className="mb-6 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <p className="text-sm text-slate-500">Priced Bills</p>
+                    <p className="mt-2 text-2xl font-bold text-slate-900">
+                      {summary.billTypeBreakdown.priced.count}
+                      <span className="ml-2 text-sm font-normal text-slate-400">
+                        transactions
+                      </span>
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-emerald-700">
+                      {formatCurrency(summary.billTypeBreakdown.priced.revenue, symbol)}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <p className="text-sm text-slate-500">Unpriced (Delivery Notes)</p>
+                    <p className="mt-2 text-2xl font-bold text-slate-900">
+                      {summary.billTypeBreakdown.unpriced.count}
+                      <span className="ml-2 text-sm font-normal text-slate-400">
+                        transactions
+                      </span>
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-amber-700">
+                      {formatCurrency(summary.billTypeBreakdown.unpriced.revenue, symbol)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Product breakdown */}
-              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <h3 className="border-b border-slate-100 px-4 py-3 font-semibold text-slate-900">
                   {t.summary.productBreakdown}
                 </h3>
@@ -132,6 +163,77 @@ export default function SummaryPage() {
                         </td>
                       </tr>
                     </tfoot>
+                  </table>
+                )}
+              </div>
+
+              {/* Transaction log with date/timestamp */}
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <h3 className="border-b border-slate-100 px-4 py-3 font-semibold text-slate-900">
+                  Transactions
+                </h3>
+                {!summary.transactions || summary.transactions.length === 0 ? (
+                  <p className="p-6 text-center text-slate-500">{t.summary.noSales}</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="px-4 py-3 text-start font-medium">Receipt #</th>
+                        <th className="px-4 py-3 text-start font-medium">Bill Type</th>
+                        <th className="px-4 py-3 text-start font-medium">Customer</th>
+                        <th className="px-4 py-3 text-end font-medium">Total</th>
+                        <th className="px-4 py-3 text-end font-medium">Date &amp; Time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.transactions
+                        .slice()
+                        .sort(
+                          (a, b) =>
+                            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+                        )
+                        .map((tx) => (
+                          <tr key={tx.id} className="border-t border-slate-100">
+                            <td className="px-4 py-3 font-mono text-slate-900">
+                              {tx.receiptNumber}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                                  tx.billType === "unpriced"
+                                    ? "bg-amber-50 text-amber-700"
+                                    : "bg-emerald-50 text-emerald-700"
+                                }`}
+                              >
+                                {tx.billType === "unpriced" ? "Unpriced" : "Priced"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-slate-600">
+                              {tx.customerName ? (
+                                <>
+                                  {tx.customerName}
+                                  {tx.customerPhone && (
+                                    <span className="ml-1 text-xs text-slate-400">
+                                      ({tx.customerPhone})
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-slate-300">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-end font-semibold text-slate-900">
+                              {formatCurrency(tx.total, symbol)}
+                            </td>
+                            <td className="px-4 py-3 text-end text-slate-500">
+                              {new Date(tx.createdAt).toLocaleString(undefined, {
+                                dateStyle: "medium",
+                                timeStyle: "short",
+                              })}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
                   </table>
                 )}
               </div>

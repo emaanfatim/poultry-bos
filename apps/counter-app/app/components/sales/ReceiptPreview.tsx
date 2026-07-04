@@ -251,6 +251,18 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
             <span className="text-slate-500">{t.receipt.cashier}</span>
             <span>{transaction.createdByName ?? user?.displayName}</span>
           </div>
+          {transaction.customerName && (
+            <div className="flex justify-between">
+              <span className="text-slate-500">Customer</span>
+              <span>{transaction.customerName}</span>
+            </div>
+          )}
+          {transaction.customerPhone && (
+            <div className="flex justify-between">
+              <span className="text-slate-500">Phone</span>
+              <span>{transaction.customerPhone}</span>
+            </div>
+          )}
           {isPriced && (
             <div className="flex justify-between">
               <span className="text-slate-500">{t.receipt.payment}</span>

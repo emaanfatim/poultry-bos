@@ -36,6 +36,20 @@
       "when": 1782747619497,
       "tag": "0004_billing_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782762000990,
+      "tag": "0005_sturdy_vision",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782816443132,
+      "tag": "0006_naive_scalphunter",
+      "breakpoints": true
     }
   ]
 }

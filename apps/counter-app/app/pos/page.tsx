@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { BillType } from "@repo/types";
 import { AuthGuard } from "../components/common/AuthGuard";
 import { Header } from "../components/common/Header";
 import { Cart } from "../components/cart/Cart";
@@ -25,18 +26,30 @@ export default function PosPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const filteredProducts = useMemo(() => {
-  const query = search.trim().toLowerCase();
-  if (!query) return products;
-  return products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(query) ||
-      p.token.toLowerCase().includes(query) ||
-      p.categoryName.toLowerCase().includes(query) ||
-      p.subCategoryName.toLowerCase().includes(query), // ← added
-  );
-}, [products, search]);
-  const handleConfirmPayment = async () => {
+    const query = search.trim().toLowerCase();
+    if (!query) return products;
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(query) ||
+        p.token.toLowerCase().includes(query) ||
+        p.categoryName.toLowerCase().includes(query) ||
+        p.subCategoryName.toLowerCase().includes(query),
+    );
+  }, [products, search]);
+
+  const handleConfirmPayment = async (
+    billType: BillType,
+    customer: { name: string; phone: string },
+  ) => {
     if (!token || cart.items.length === 0) return;
+
+    // Defensive client-side check — mirrors modal validation,
+    // never trust client state alone, server also enforces this.
+    if (billType === "unpriced" && (!customer.name.trim() || !customer.phone.trim())) {
+      alert("Customer name and phone are required for unpriced bills.");
+      return;
+    }
+
     setIsProcessing(true);
     try {
       const transaction = await createSale(token, {
@@ -45,6 +58,9 @@ export default function PosPage() {
           quantity: item.quantity,
         })),
         paymentMethod: "cash",
+        billType,
+        customerName: customer.name || undefined,
+        customerPhone: customer.phone || undefined,
       });
       cart.clearCart();
       setShowPayment(false);

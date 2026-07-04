@@ -42,20 +42,6 @@ export interface TransactionLineItem {
   lineTotal: string;
 }
 
-export interface Transaction {
-  id: string;
-  receiptNumber: string;
-  type: string;
-  status: string;
-  paymentMethod: string;
-  subtotal: string;
-  total: string;
-  notes?: string | null;
-  createdAt: string;
-  createdByName?: string | null;
-  lineItems: TransactionLineItem[];
-}
-
 export interface AuthUser {
   id: string;
   tenantId: string;
@@ -63,6 +49,7 @@ export interface AuthUser {
   username: string;
   displayName: string;
   role: UserRole;
+
   /** Billing access is true for every logged-in owner/cashier. */
   canIssuePricedBill: boolean;
 }
@@ -71,7 +58,11 @@ export interface LoginResponse {
   token: string;
   user: AuthUser;
   tenant: TenantConfig;
-  branch: { id: string; name: string; token: string };
+  branch: {
+    id: string;
+    name: string;
+    token: string;
+  };
 }
 
 export interface LoginRequest {
@@ -79,10 +70,33 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface Transaction {
+  id: string;
+  receiptNumber: string;
+  type: string;
+  status: string;
+  paymentMethod: string;
+  billType: BillType;
+  subtotal: string;
+  total: string;
+  notes?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  createdAt: string;
+  createdByName?: string | null;
+  lineItems: TransactionLineItem[];
+}
+
 export interface CreateSaleRequest {
-  items: Array<{ productId: string; quantity: number }>;
+  items: Array<{
+    productId: string;
+    quantity: number;
+  }>;
   paymentMethod?: string;
   notes?: string;
+  billType?: BillType;
+  customerName?: string;
+  customerPhone?: string;
 }
 
 export interface DailySummary {
@@ -90,11 +104,33 @@ export interface DailySummary {
   totalRevenue: string;
   transactionCount: number;
   avgOrderValue: string;
+
+  billTypeBreakdown: {
+    priced: {
+      count: number;
+      revenue: string;
+    };
+    unpriced: {
+      count: number;
+      revenue: string;
+    };
+  };
+
   productBreakdown: Array<{
     productId: string;
     productName: string;
     totalQuantity: string;
     unit: string;
     totalRevenue: string;
+  }>;
+
+  transactions: Array<{
+    id: string;
+    receiptNumber: string;
+    billType: BillType;
+    total: string;
+    customerName?: string | null;
+    customerPhone?: string | null;
+    createdAt: string;
   }>;
 }
