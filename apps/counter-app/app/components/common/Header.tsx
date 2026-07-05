@@ -52,6 +52,7 @@ export function Header() {
           {navLink("/pos", t.nav.pos)}
           {isOwner && navLink("/prices", t.nav.prices)}
           {navLink("/summary", t.nav.summary)}
+          {isOwner && navLink("/settings/units", "⚙ Units")}
         </nav>
 
         <div className="flex items-center gap-3">

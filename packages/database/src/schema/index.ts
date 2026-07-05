@@ -96,6 +96,30 @@ export const productSubCategories = pgTable(
   ],
 );
 
+// Units — gives real structure and conversion math to unit strings
+export const units = pgTable(
+  "units",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    name: text("name").notNull(),
+    code: text("code").notNull(),
+    type: text("type", { enum: ["weight", "volume", "count"] }).notNull(),
+    isBase: boolean("is_base").notNull().default(false),
+    // Points to the base unit this converts into (null for base units themselves)
+    baseUnitId: uuid("base_unit_id"),
+    // How many base units = 1 of this unit (e.g. maund=40, gram=0.001)
+    conversionFactor: numeric("conversion_factor", { precision: 20, scale: 10 }),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("units_tenant_code_idx").on(table.tenantId, table.code),
+  ],
+);
+
 export const products = pgTable(
   "products",
   {
@@ -108,7 +132,10 @@ export const products = pgTable(
       .references(() => productSubCategories.id),
     name: text("name").notNull(),
     token: text("token").notNull(),
-    unit: text("unit").notNull().default("kg"),
+    // FK to units table — replaces old free-text unit field
+    unitId: uuid("unit_id")
+      .notNull()
+      .references(() => units.id),
     currentPrice: numeric("current_price", { precision: 10, scale: 2 })
       .notNull()
       .default("0"),

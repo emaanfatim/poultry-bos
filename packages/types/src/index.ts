@@ -1,6 +1,7 @@
 export type ProductStatus = "active" | "inactive";
 export type UserRole = "owner" | "cashier";
 export type BillType = "priced" | "unpriced";
+export type UnitType = "weight" | "volume" | "count";
 
 export interface TenantConfig {
   id: string;
@@ -11,11 +12,23 @@ export interface TenantConfig {
   phone?: string | null;
 }
 
+export interface Unit {
+  id: string;
+  name: string;
+  code: string;
+  type: UnitType;
+  isBase: boolean;
+  baseUnitId?: string | null;
+  baseUnitCode?: string | null;
+  conversionFactor?: string | null;
+  isActive: boolean;
+}
+
 export interface Product {
   id: string;
   token: string;
   name: string;
-  unit: string;
+  unit: Unit;
   currentPrice: string;
   status: ProductStatus;
   categoryName: string;
@@ -26,7 +39,7 @@ export interface Product {
 export interface CartLineItem {
   productId: string;
   productName: string;
-  unit: string;
+  unit: Unit;
   quantity: number;
   rate: string;
   lineTotal: string;

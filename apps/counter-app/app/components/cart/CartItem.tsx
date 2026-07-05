@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { CartLineItem } from "@repo/types";
+import type { CartLineItem, Unit } from "@repo/types";
 import { useAuth } from "../../providers/AuthProvider";
 import { useI18n } from "../../providers/I18nProvider";
+import { useUnits } from "../../hooks/useUnits";
 import { formatCurrency } from "../../services/sales";
 
 interface CartItemProps {
@@ -12,58 +13,44 @@ interface CartItemProps {
   onRemove: (productId: string) => void;
 }
 
-function isKgProduct(unit: string) {
-  return unit.toLowerCase() === "kg";
-}
-
-function smartDisplay(qtyKg: number): { value: string; unit: "kg" | "g" } {
-  if (qtyKg < 1) {
-    return { value: String(Math.round(qtyKg * 1000)), unit: "g" };
-  }
-  return { value: String(parseFloat(qtyKg.toFixed(3))), unit: "kg" };
-}
-
 export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
   const { tenant } = useAuth();
   const { t } = useI18n();
+  const { getSameTypeUnits, convert } = useUnits(true);
   const symbol = tenant?.currencySymbol ?? "Rs";
+
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [qtyWarning, setQtyWarning] = useState(false);
 
-  const showToggle = isKgProduct(item.unit);
+  // Display unit — start with the product's base unit
+  const [displayUnit, setDisplayUnit] = useState<Unit>(item.unit);
+  const [rawValue, setRawValue] = useState(String(parseFloat(item.quantity.toString())));
 
-  const getDisplay = (qtyKg: number) =>
-    showToggle
-      ? smartDisplay(qtyKg)
-      : { value: String(qtyKg), unit: item.unit as "kg" | "g" };
+  const availableUnits = getSameTypeUnits(item.unit);
+  const showToggle = availableUnits.length > 1;
 
-  const initial = getDisplay(parseFloat(item.quantity.toString()));
-  const [cartUnit, setCartUnit] = useState<string>(initial.unit);
-  const [rawValue, setRawValue] = useState(initial.value);
-
-  // Sync display when item.quantity changes from outside (e.g. adding more from product card)
+  // Sync display when item.quantity changes from outside
   useEffect(() => {
-    const qtyKg = parseFloat(item.quantity.toString());
-    const display = getDisplay(qtyKg);
-    if (!rawValue.endsWith(".")) {
-      setCartUnit(display.unit);
-      setRawValue(display.value);
+    const baseQty = parseFloat(item.quantity.toString());
+    const converted = displayUnit.id === item.unit.id
+      ? baseQty
+      : convert(baseQty, item.unit, displayUnit);
+    if (converted !== null && !rawValue.endsWith(".")) {
+      setRawValue(String(parseFloat(converted.toFixed(6))));
     }
   }, [item.quantity]);
 
-  const handleToggleUnit = () => {
+  const cycleUnit = () => {
+    const idx = availableUnits.findIndex((u) => u.id === displayUnit.id);
+    const next = availableUnits[(idx + 1) % availableUnits.length]!;
     const current = parseFloat(rawValue);
-    if (isNaN(current)) {
-      setCartUnit((u) => (u === "kg" ? "g" : "kg"));
-      return;
+    if (!isNaN(current)) {
+      const converted = convert(current, displayUnit, next);
+      if (converted !== null) {
+        setRawValue(String(parseFloat(converted.toFixed(6))));
+      }
     }
-    if (cartUnit === "kg") {
-      setRawValue(String(Math.round(current * 1000)));
-      setCartUnit("g");
-    } else {
-      setRawValue(String(parseFloat((current / 1000).toFixed(3))));
-      setCartUnit("kg");
-    }
+    setDisplayUnit(next);
   };
 
   const handleQuantityChange = (raw: string) => {
@@ -78,8 +65,12 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
       return;
     }
     setQtyWarning(false);
-    const qtyInKg = showToggle && cartUnit === "g" ? qty / 1000 : qty;
-    onUpdateQuantity(item.productId, qtyInKg);
+
+    // Always store in base unit
+    const baseQty = displayUnit.id === item.unit.id
+      ? qty
+      : convert(qty, displayUnit, item.unit) ?? qty;
+    onUpdateQuantity(item.productId, baseQty);
   };
 
   const handleRemoveClick = () => {
@@ -91,23 +82,28 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
     }
   };
 
-  const kgEquivalent =
-    showToggle && cartUnit === "g" && rawValue !== "" && !isNaN(parseFloat(rawValue))
-      ? parseFloat((parseFloat(rawValue) / 1000).toFixed(3))
-      : null;
+  // Base equivalent hint when showing in non-base unit
+  const baseHint = (() => {
+    if (displayUnit.id === item.unit.id) return null;
+    const raw = parseFloat(rawValue);
+    if (isNaN(raw) || raw <= 0) return null;
+    const base = convert(raw, displayUnit, item.unit);
+    if (base === null) return null;
+    return `= ${parseFloat(base.toFixed(4))} ${item.unit.code}`;
+  })();
 
   return (
     <div className="flex items-start gap-3 border-b border-slate-100 py-3 last:border-0">
       <div className="min-w-0 flex-1">
         <p className="font-medium text-slate-900">{item.productName}</p>
         <p className="text-xs text-slate-500">
-          {formatCurrency(item.rate, symbol)} / {item.unit}
+          {formatCurrency(item.rate, symbol)} / {item.unit.code}
         </p>
         {qtyWarning && (
           <p className="mt-1 text-xs text-red-500">Quantity must be greater than 0</p>
         )}
-        {kgEquivalent !== null && (
-          <p className="mt-0.5 text-xs text-emerald-600">= {kgEquivalent} kg</p>
+        {baseHint && (
+          <p className="mt-0.5 text-xs text-emerald-600">{baseHint}</p>
         )}
       </div>
 
@@ -120,7 +116,7 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
             inputMode="decimal"
             value={rawValue}
             onChange={(e) => handleQuantityChange(e.target.value)}
-            className={`w-28 rounded-lg border py-1.5 pl-2 pr-10 text-sm text-end outline-none focus:border-emerald-500 ${
+            className={`w-28 rounded-lg border py-1.5 pl-2 pr-14 text-sm text-end outline-none focus:border-emerald-500 ${
               qtyWarning ? "border-red-400 bg-red-50" : "border-slate-200"
             }`}
             aria-label={t.pos.quantity}
@@ -128,15 +124,15 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
           {showToggle ? (
             <button
               type="button"
-              onClick={handleToggleUnit}
+              onClick={cycleUnit}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-bold text-emerald-700 hover:bg-emerald-200 transition-colors"
-              title="Toggle between grams and kilograms"
+              title="Toggle unit"
             >
-              {cartUnit}
+              {displayUnit.code}
             </button>
           ) : (
             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-              {item.unit}
+              {item.unit.code}
             </span>
           )}
         </div>

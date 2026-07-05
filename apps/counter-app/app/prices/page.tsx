@@ -67,7 +67,7 @@ export default function PricesPage() {
         token,
         changedProducts.map((p) => ({
           productId: p.id,
-          price: prices[p.id] ?? p.currentPrice,
+          currentPrice: prices[p.id] ?? p.currentPrice,
         })),
       );
       setOriginalPrices({ ...prices });
@@ -120,7 +120,7 @@ export default function PricesPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-slate-600">{product.unit}</td>
+                        <td className="px-4 py-3 text-slate-600">{product.unit.name} ({product.unit.code})</td>
                         <td className="px-4 py-3 text-end">
                           <input
                             type="number"

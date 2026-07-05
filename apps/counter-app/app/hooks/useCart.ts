@@ -30,7 +30,7 @@ export function useCart() {
         {
           productId: product.id,
           productName: product.name,
-          unit: product.unit,
+          unit: product.unit, // Now a Unit object
           quantity,
           rate: product.currentPrice,
           lineTotal: calcLineTotal(quantity, product.currentPrice),

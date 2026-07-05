@@ -71,6 +71,13 @@
       "when": 1783249629930,
       "tag": "0009_wealthy_madame_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783269746368,
+      "tag": "0010_bent_prowler",
+      "breakpoints": true
     }
   ]
 }

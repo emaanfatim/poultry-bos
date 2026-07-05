@@ -151,7 +151,7 @@ export default function PosPage() {
             )}
             {!isLoading && !error && (
               <div className="min-h-0 flex-1 overflow-y-auto">
-                <ProductGrid products={filteredProducts} onAdd={cart.addItem} />
+                <ProductGrid products={filteredProducts} onAdd={(product, qty) => cart.addItem(product, qty)} />
               </div>
             )}
           </section>

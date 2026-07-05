@@ -5,6 +5,7 @@ import {
   products,
   transactionLineItems,
   transactions,
+  units,
   users,
 } from "@repo/database";
 import { getDb } from "../db";
@@ -96,25 +97,32 @@ salesRoutes.post("/", async (c) => {
   let subtotal = 0;
 
   for (const item of parsed.data.items) {
-    const [product] = await db
-      .select()
+    const [row] = await db
+      .select({
+        id: products.id,
+        name: products.name,
+        currentPrice: products.currentPrice,
+        status: products.status,
+        unitCode: units.code,
+      })
       .from(products)
+      .innerJoin(units, eq(products.unitId, units.id))
       .where(and(eq(products.id, item.productId), eq(products.tenantId, tenantId)))
       .limit(1);
 
-    if (!product || product.status !== "active") {
+    if (!row || row.status !== "active") {
       return c.json({ error: `Product not found: ${item.productId}` }, 400);
     }
 
-    const lineTotal = multiplyLineTotal(item.quantity, product.currentPrice);
+    const lineTotal = multiplyLineTotal(item.quantity, row.currentPrice);
     subtotal += parseFloat(lineTotal);
 
     lineItems.push({
-      productId: product.id,
-      productName: product.name,
-      unit: product.unit,
+      productId: row.id,
+      productName: row.name,
+      unit: row.unitCode,
       quantity: roundQuantity(item.quantity),
-      rate: product.currentPrice,
+      rate: row.currentPrice,
       lineTotal,
     });
   }
