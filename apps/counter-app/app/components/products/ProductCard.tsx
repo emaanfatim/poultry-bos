@@ -4,12 +4,12 @@ import { useState } from "react";
 import type { Product, Unit } from "@repo/types";
 import { useAuth } from "../../providers/AuthProvider";
 import { useI18n } from "../../providers/I18nProvider";
-import { useUnits } from "../../hooks/useUnits";
 import { formatCurrency } from "../../services/sales";
+import { convertQuantity } from "../../utils/unitConversion";
 
 interface ProductCardProps {
   product: Product;
-  onAdd: (product: Product, quantity: number, displayUnit: Unit) => void;
+  onAdd: (product: Product, quantity: number, unit: Unit) => void;
 }
 
 function ProductImage({ src, alt }: { src: string | null | undefined; alt: string }) {
@@ -29,58 +29,42 @@ function ProductImage({ src, alt }: { src: string | null | undefined; alt: strin
 export function ProductCard({ product, onAdd }: ProductCardProps) {
   const { tenant } = useAuth();
   const { t } = useI18n();
-  const { getSameTypeUnits, convert } = useUnits(true);
 
   const [quantity, setQuantity] = useState("");
-  // selectedUnit is what the cashier is currently typing in
+
+  // Units this specific product is allowed to sell in (owner-configured).
+  // Falls back to just its priced unit if none configured yet.
+  const availableUnits = product.units && product.units.length > 0 ? product.units : [product.unit];
   const [selectedUnit, setSelectedUnit] = useState<Unit>(product.unit);
+  const showUnitToggle = availableUnits.length > 1;
 
   const symbol = tenant?.currencySymbol ?? "Rs";
-
-  // All active units of the same type as this product's base unit
-  const availableUnits = getSameTypeUnits(product.unit);
-  const showUnitToggle = availableUnits.length > 1;
 
   const cycleUnit = () => {
     const idx = availableUnits.findIndex((u) => u.id === selectedUnit.id);
     const next = availableUnits[(idx + 1) % availableUnits.length]!;
 
-    // Convert current quantity to new unit
     const current = parseFloat(quantity);
     if (!isNaN(current) && current > 0) {
-      const converted = convert(current, selectedUnit, next);
-      if (converted !== null) {
-        setQuantity(String(parseFloat(converted.toFixed(6)).toString()));
-      }
+      const converted = convertQuantity(current, selectedUnit, next);
+      setQuantity(String(parseFloat(converted.toFixed(6))));
     }
     setSelectedUnit(next);
   };
 
-  // Quantity in base unit (what goes into cart calculations)
-  const getBaseQuantity = (): number | null => {
-    const raw = parseFloat(quantity);
-    if (isNaN(raw) || raw <= 0) return null;
-    if (selectedUnit.isBase) return raw;
-    return convert(raw, selectedUnit, product.unit) ?? null;
-  };
-
-  // Equivalent in base unit shown as hint
-  const baseEquivalent = (() => {
-    if (selectedUnit.id === product.unit.id) return null;
-    const raw = parseFloat(quantity);
-    if (isNaN(raw) || raw <= 0 || quantity === "") return null;
-    const converted = convert(raw, selectedUnit, product.unit);
-    if (converted === null) return null;
-    return `= ${parseFloat(converted.toFixed(4))} ${product.unit.code}`;
-  })();
-
   const handleAdd = () => {
-    const baseQty = getBaseQuantity();
-    if (baseQty === null) return;
-    onAdd(product, baseQty, selectedUnit);
+    const raw = parseFloat(quantity);
+    if (isNaN(raw) || raw <= 0) return;
+    onAdd(product, raw, selectedUnit);
     setQuantity("");
     setSelectedUnit(product.unit);
   };
+
+  // Live equivalent in the product's priced unit, e.g. "0.5 Maund = 20 kg"
+  const priceUnitEquivalent =
+    selectedUnit.id !== product.unit.id && quantity !== "" && !isNaN(parseFloat(quantity))
+      ? convertQuantity(parseFloat(quantity), selectedUnit, product.unit)
+      : null;
 
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
@@ -105,7 +89,7 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
               step="any"
               inputMode="decimal"
               value={quantity}
-              placeholder={`Weight in ${selectedUnit.code}`}
+              placeholder={`Qty in ${selectedUnit.code}`}
               onChange={(e) => setQuantity(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
               className="w-full rounded-lg border border-slate-200 py-2.5 pl-3 pr-16 text-base outline-none focus:border-emerald-500"
@@ -137,8 +121,10 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
           </button>
         </div>
 
-        {baseEquivalent && (
-          <p className="mt-1.5 text-xs text-emerald-600">{baseEquivalent}</p>
+        {priceUnitEquivalent !== null && (
+          <p className="mt-1.5 text-xs text-emerald-600">
+            = {parseFloat(priceUnitEquivalent.toFixed(3))} {product.unit.code}
+          </p>
         )}
       </div>
     </div>

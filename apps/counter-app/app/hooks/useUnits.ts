@@ -54,7 +54,7 @@ export function useUnits(activeOnly = false) {
 
   const toggleUnit = useCallback(async (unitId: string) => {
     if (!token) throw new Error("Not authenticated");
-    const data = await api.post<{ unit: Unit }>(`/units/${unitId}/toggle`, {}, token);
+    const data = await api.patch<{ unit: Unit }>(`/units/${unitId}/toggle`, {}, token);
     setUnits((prev) => prev.map((u) => u.id === unitId ? { ...u, isActive: data.unit.isActive } : u));
   }, [token]);
 

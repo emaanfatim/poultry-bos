@@ -13,6 +13,7 @@
     "db:generate": "pnpm --filter @repo/database db:generate",
     "db:migrate": "pnpm --filter @repo/database db:migrate",
     "db:seed": "pnpm --filter @repo/database db:seed",
+    "db:backfill-product-units": "pnpm --filter @repo/database db:backfill-product-units",
     "db:setup": "pnpm db:migrate && pnpm db:seed"
   },
   "devDependencies": {

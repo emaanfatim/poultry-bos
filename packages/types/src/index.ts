@@ -28,7 +28,8 @@ export interface Product {
   id: string;
   token: string;
   name: string;
-  unit: Unit;
+  unit: Unit; // the unit currentPrice is denominated in
+  units?: Unit[]; // units a cashier may sell this in (superset including `unit`)
   currentPrice: string;
   status: ProductStatus;
   categoryName: string;
@@ -43,6 +44,11 @@ export interface CartLineItem {
   quantity: number;
   rate: string;
   lineTotal: string;
+  // Carried so a cart line can be switched to a different sellable unit later
+  // (e.g. kg → maund) without losing the original price.
+  basePrice?: string;
+  priceUnit?: Unit;
+  sellableUnits?: Unit[];
 }
 
 export interface TransactionLineItem {
@@ -95,7 +101,7 @@ export interface LoginRequest {
 }
 
 export interface CreateSaleRequest {
-  items: Array<{ productId: string; quantity: number }>;
+  items: Array<{ productId: string; quantity: number; unitId?: string }>;
   paymentMethod?: string;
   notes?: string;
   billType?: BillType;

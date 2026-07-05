@@ -60,6 +60,7 @@ export default function PosPage() {
         items: cart.items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
+          unitId: item.unit.id,
         })),
         paymentMethod: "cash",
         billType,
@@ -151,7 +152,7 @@ export default function PosPage() {
             )}
             {!isLoading && !error && (
               <div className="min-h-0 flex-1 overflow-y-auto">
-                <ProductGrid products={filteredProducts} onAdd={(product, qty) => cart.addItem(product, qty)} />
+                <ProductGrid products={filteredProducts} onAdd={(product, qty, unit) => cart.addItem(product, qty, unit)} />
               </div>
             )}
           </section>
@@ -179,6 +180,7 @@ export default function PosPage() {
                   items={cart.items}
                   subtotal={cart.subtotal}
                   onUpdateQuantity={cart.updateQuantity}
+                  onChangeUnit={cart.changeUnit}
                   onRemove={cart.removeItem}
                   onCheckout={() => setShowPayment(true)}
                   onSaveDraft={() => setShowSaveDraft(true)}

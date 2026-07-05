@@ -6,8 +6,9 @@ import { closeDb, createDb } from "./index.ts";
 import {
   branches,
   productCategories,
-  products,
   productSubCategories,
+  productUnits,
+  products,
   tenants,
   units,
   users,
@@ -134,6 +135,16 @@ async function main() {
     },
     {
       tenantId: tenant!.id,
+      name: "Pound",
+      code: "lb",
+      type: "weight",
+      isBase: false,
+      baseUnitId: unitKg!.id,
+      conversionFactor: "0.45359237",
+      isActive: true,
+    },
+    {
+      tenantId: tenant!.id,
       name: "Dozen",
       code: "dozen",
       type: "count",
@@ -172,7 +183,9 @@ async function main() {
     .returning();
 
   // ── Products (now using unitId FK) ─────────────────────────────────────
-  await db.insert(products).values([
+  const seededProducts = await db
+    .insert(products)
+    .values([
     // Fresh Cuts — kg
     {
       tenantId: tenant!.id,
@@ -257,13 +270,39 @@ async function main() {
       currentPrice: "350.00",
       imageKey: "products/broiler-dressed.webp",
     },
-  ]);
+  ])
+    .returning();
+
+  // ── Product ↔ Unit links ────────────────────────────────────────────────
+  // Every product can be sold in its own priced unit plus every other active
+  // unit of the same type (kg/g/maund/lb for weight, piece/dozen for count).
+  const allUnits = [unitKg!, unitPiece!, ...(await db.select().from(units).where(eq(units.tenantId, tenant!.id)))];
+  const seenUnitIds = new Set<string>();
+  const uniqueUnits = allUnits.filter((u) => {
+    if (seenUnitIds.has(u.id)) return false;
+    seenUnitIds.add(u.id);
+    return true;
+  });
+
+  for (const product of seededProducts) {
+    const priceUnit = uniqueUnits.find((u) => u.id === product.unitId);
+    if (!priceUnit) continue;
+    const sellable = uniqueUnits.filter((u) => u.type === priceUnit.type && u.isActive);
+
+    await db.insert(productUnits).values(
+      sellable.map((u) => ({
+        tenantId: tenant!.id,
+        productId: product.id,
+        unitId: u.id,
+      })),
+    );
+  }
 
   console.log("Seed complete");
   console.log("  Owner login:   owner / owner123");
   console.log("  Cashier login: cashier / cashier123");
   console.log("");
-  console.log("  Units seeded: kg, g, maund, piece, dozen");
+  console.log("  Units seeded: kg, g, maund, lb, piece, dozen");
   console.log("  Category structure seeded:");
   console.log("  Finished Output Products");
   console.log("    ├── Fresh Cuts  → Leg Piece, Boneless, Curry Cut, Whole Bird");

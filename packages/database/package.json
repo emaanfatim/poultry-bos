@@ -11,6 +11,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/migrate.ts",
     "db:seed": "tsx src/seed.ts",
+    "db:backfill-product-units": "tsx src/backfill-product-units.ts",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {

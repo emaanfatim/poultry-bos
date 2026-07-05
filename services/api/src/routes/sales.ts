@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
+  productUnits,
   products,
   transactionLineItems,
   transactions,
@@ -17,6 +18,7 @@ import {
   startOfToday,
   todayDateKey,
 } from "../lib/money";
+import { rateForUnit, sameFamily } from "../lib/units";
 import { authMiddleware } from "../middleware/auth";
 import type { AppVariables } from "../types";
 
@@ -31,6 +33,8 @@ const createSaleSchema = z
         z.object({
           productId: z.string().uuid(),
           quantity: z.number().positive(),
+          // Which unit `quantity` is expressed in. Defaults to the product's priced unit.
+          unitId: z.string().uuid().optional(),
         }),
       )
       .min(1),
@@ -103,7 +107,7 @@ salesRoutes.post("/", async (c) => {
         name: products.name,
         currentPrice: products.currentPrice,
         status: products.status,
-        unitCode: units.code,
+        priceUnit: units,
       })
       .from(products)
       .innerJoin(units, eq(products.unitId, units.id))
@@ -114,15 +118,46 @@ salesRoutes.post("/", async (c) => {
       return c.json({ error: `Product not found: ${item.productId}` }, 400);
     }
 
-    const lineTotal = multiplyLineTotal(item.quantity, row.currentPrice);
+    let sellUnit = row.priceUnit;
+    let rate = row.currentPrice;
+
+    if (item.unitId && item.unitId !== row.priceUnit.id) {
+      const [sellable] = await db
+        .select({ unit: units })
+        .from(productUnits)
+        .innerJoin(units, eq(productUnits.unitId, units.id))
+        .where(
+          and(
+            eq(productUnits.tenantId, tenantId),
+            eq(productUnits.productId, row.id),
+            eq(units.id, item.unitId),
+          ),
+        )
+        .limit(1);
+
+      if (!sellable || !sellable.unit.isActive) {
+        return c.json({ error: `Selected unit is not available for ${row.name}` }, 400);
+      }
+      if (!sameFamily(sellable.unit, row.priceUnit)) {
+        return c.json(
+          { error: `Selected unit doesn't convert with ${row.name}'s priced unit` },
+          400,
+        );
+      }
+
+      sellUnit = sellable.unit;
+      rate = rateForUnit(row.currentPrice, row.priceUnit, sellUnit);
+    }
+
+    const lineTotal = multiplyLineTotal(item.quantity, rate);
     subtotal += parseFloat(lineTotal);
 
     lineItems.push({
       productId: row.id,
       productName: row.name,
-      unit: row.unitCode,
+      unit: sellUnit.code,
       quantity: roundQuantity(item.quantity),
-      rate: row.currentPrice,
+      rate,
       lineTotal,
     });
   }

@@ -12,3 +12,11 @@ export async function updatePrices(
 ): Promise<void> {
   await api.put("/products/prices", { prices }, token);
 }
+
+export async function setProductSellableUnits(
+  token: string,
+  productId: string,
+  unitIds: string[],
+): Promise<void> {
+  await api.put(`/products/${productId}/units`, { unitIds }, token);
+}

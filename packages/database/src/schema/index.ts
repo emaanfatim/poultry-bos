@@ -151,6 +151,29 @@ export const products = pgTable(
   ],
 );
 
+// Which units a product may be sold in (e.g. Live Bird → Kilogram + Maund + Pound).
+// products.unitId stays the unit currentPrice is denominated in; this table is the
+// broader, owner-configurable set of units a cashier is allowed to sell it in.
+export const productUnits = pgTable(
+  "product_units",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    unitId: uuid("unit_id")
+      .notNull()
+      .references(() => units.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("product_units_product_unit_idx").on(table.productId, table.unitId),
+  ],
+);
+
 export const transactions = pgTable(
   "transactions",
   {

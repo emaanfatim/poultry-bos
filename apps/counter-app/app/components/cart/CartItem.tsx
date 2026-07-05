@@ -1,56 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { CartLineItem, Unit } from "@repo/types";
+import type { CartLineItem } from "@repo/types";
 import { useAuth } from "../../providers/AuthProvider";
 import { useI18n } from "../../providers/I18nProvider";
-import { useUnits } from "../../hooks/useUnits";
 import { formatCurrency } from "../../services/sales";
 
 interface CartItemProps {
   item: CartLineItem;
   onUpdateQuantity: (productId: string, quantity: number) => void;
+  onChangeUnit: (productId: string, unit: CartLineItem["unit"]) => void;
   onRemove: (productId: string) => void;
 }
 
-export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
+export function CartItem({ item, onUpdateQuantity, onChangeUnit, onRemove }: CartItemProps) {
   const { tenant } = useAuth();
   const { t } = useI18n();
-  const { getSameTypeUnits, convert } = useUnits(true);
   const symbol = tenant?.currencySymbol ?? "Rs";
 
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [qtyWarning, setQtyWarning] = useState(false);
-
-  // Display unit — start with the product's base unit
-  const [displayUnit, setDisplayUnit] = useState<Unit>(item.unit);
   const [rawValue, setRawValue] = useState(String(parseFloat(item.quantity.toString())));
 
-  const availableUnits = getSameTypeUnits(item.unit);
+  const availableUnits = item.sellableUnits ?? [item.unit];
   const showToggle = availableUnits.length > 1;
 
-  // Sync display when item.quantity changes from outside
+  // Sync display when item.quantity changes from outside (e.g. re-added from product card)
   useEffect(() => {
-    const baseQty = parseFloat(item.quantity.toString());
-    const converted = displayUnit.id === item.unit.id
-      ? baseQty
-      : convert(baseQty, item.unit, displayUnit);
-    if (converted !== null && !rawValue.endsWith(".")) {
-      setRawValue(String(parseFloat(converted.toFixed(6))));
+    if (!rawValue.endsWith(".")) {
+      setRawValue(String(parseFloat(item.quantity.toString())));
     }
   }, [item.quantity]);
 
   const cycleUnit = () => {
-    const idx = availableUnits.findIndex((u) => u.id === displayUnit.id);
+    const idx = availableUnits.findIndex((u) => u.id === item.unit.id);
     const next = availableUnits[(idx + 1) % availableUnits.length]!;
-    const current = parseFloat(rawValue);
-    if (!isNaN(current)) {
-      const converted = convert(current, displayUnit, next);
-      if (converted !== null) {
-        setRawValue(String(parseFloat(converted.toFixed(6))));
-      }
-    }
-    setDisplayUnit(next);
+    onChangeUnit(item.productId, next);
   };
 
   const handleQuantityChange = (raw: string) => {
@@ -65,12 +50,7 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
       return;
     }
     setQtyWarning(false);
-
-    // Always store in base unit
-    const baseQty = displayUnit.id === item.unit.id
-      ? qty
-      : convert(qty, displayUnit, item.unit) ?? qty;
-    onUpdateQuantity(item.productId, baseQty);
+    onUpdateQuantity(item.productId, qty);
   };
 
   const handleRemoveClick = () => {
@@ -82,16 +62,6 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
     }
   };
 
-  // Base equivalent hint when showing in non-base unit
-  const baseHint = (() => {
-    if (displayUnit.id === item.unit.id) return null;
-    const raw = parseFloat(rawValue);
-    if (isNaN(raw) || raw <= 0) return null;
-    const base = convert(raw, displayUnit, item.unit);
-    if (base === null) return null;
-    return `= ${parseFloat(base.toFixed(4))} ${item.unit.code}`;
-  })();
-
   return (
     <div className="flex items-start gap-3 border-b border-slate-100 py-3 last:border-0">
       <div className="min-w-0 flex-1">
@@ -101,9 +71,6 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
         </p>
         {qtyWarning && (
           <p className="mt-1 text-xs text-red-500">Quantity must be greater than 0</p>
-        )}
-        {baseHint && (
-          <p className="mt-0.5 text-xs text-emerald-600">{baseHint}</p>
         )}
       </div>
 
@@ -126,9 +93,9 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
               type="button"
               onClick={cycleUnit}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-bold text-emerald-700 hover:bg-emerald-200 transition-colors"
-              title="Toggle unit"
+              title={`Switch unit (${availableUnits.map((u) => u.code).join(" → ")})`}
             >
-              {displayUnit.code}
+              {item.unit.code}
             </button>
           ) : (
             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">

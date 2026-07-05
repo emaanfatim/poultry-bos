@@ -9,6 +9,7 @@ interface CartProps {
   items: CartLineItem[];
   subtotal: string;
   onUpdateQuantity: (productId: string, quantity: number) => void;
+  onChangeUnit: (productId: string, unit: CartLineItem["unit"]) => void;
   onRemove: (productId: string) => void;
   onCheckout: () => void;
   onSaveDraft?: () => void;
@@ -18,6 +19,7 @@ export function Cart({
   items,
   subtotal,
   onUpdateQuantity,
+  onChangeUnit,
   onRemove,
   onCheckout,
   onSaveDraft,
@@ -53,6 +55,7 @@ export function Cart({
               key={item.productId}
               item={item}
               onUpdateQuantity={onUpdateQuantity}
+              onChangeUnit={onChangeUnit}
               onRemove={onRemove}
             />
           ))
