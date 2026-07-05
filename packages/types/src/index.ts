@@ -42,34 +42,6 @@ export interface TransactionLineItem {
   lineTotal: string;
 }
 
-export interface AuthUser {
-  id: string;
-  tenantId: string;
-  branchId: string;
-  username: string;
-  displayName: string;
-  role: UserRole;
-
-  /** Billing access is true for every logged-in owner/cashier. */
-  canIssuePricedBill: boolean;
-}
-
-export interface LoginResponse {
-  token: string;
-  user: AuthUser;
-  tenant: TenantConfig;
-  branch: {
-    id: string;
-    name: string;
-    token: string;
-  };
-}
-
-export interface LoginRequest {
-  username: string;
-  password: string;
-}
-
 export interface Transaction {
   id: string;
   receiptNumber: string;
@@ -87,11 +59,30 @@ export interface Transaction {
   lineItems: TransactionLineItem[];
 }
 
+export interface AuthUser {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  username: string;
+  displayName: string;
+  role: UserRole;
+  canIssuePricedBill: boolean;
+}
+
+export interface LoginResponse {
+  token: string;
+  user: AuthUser;
+  tenant: TenantConfig;
+  branch: { id: string; name: string; token: string };
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
 export interface CreateSaleRequest {
-  items: Array<{
-    productId: string;
-    quantity: number;
-  }>;
+  items: Array<{ productId: string; quantity: number }>;
   paymentMethod?: string;
   notes?: string;
   billType?: BillType;
@@ -99,23 +90,20 @@ export interface CreateSaleRequest {
   customerPhone?: string;
 }
 
+export interface BulkPriceUpdate {
+  productId: string;
+  price: string;
+}
+
 export interface DailySummary {
   date: string;
   totalRevenue: string;
   transactionCount: number;
   avgOrderValue: string;
-
   billTypeBreakdown: {
-    priced: {
-      count: number;
-      revenue: string;
-    };
-    unpriced: {
-      count: number;
-      revenue: string;
-    };
+    priced: { count: number; revenue: string };
+    unpriced: { count: number; revenue: string };
   };
-
   productBreakdown: Array<{
     productId: string;
     productName: string;
@@ -123,7 +111,6 @@ export interface DailySummary {
     unit: string;
     totalRevenue: string;
   }>;
-
   transactions: Array<{
     id: string;
     receiptNumber: string;
@@ -133,4 +120,30 @@ export interface DailySummary {
     customerPhone?: string | null;
     createdAt: string;
   }>;
+}
+
+export interface DraftItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  rate: string;
+  unit: string;
+}
+
+export interface Draft {
+  id: string;
+  draftNumber: number;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  items: DraftItem[];
+  subtotal: string;
+  createdAt: string;
+  createdByName?: string;
+}
+
+export interface CreateDraftRequest {
+  customerName?: string;
+  customerPhone?: string;
+  items: DraftItem[];
+  subtotal: string;
 }

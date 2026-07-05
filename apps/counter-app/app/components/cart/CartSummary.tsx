@@ -7,10 +7,16 @@ import { formatCurrency } from "../../services/sales";
 interface CartSummaryProps {
   subtotal: string;
   onCheckout: () => void;
+  onSaveDraft?: () => void;
   disabled: boolean;
 }
 
-export function CartSummary({ subtotal, onCheckout, disabled }: CartSummaryProps) {
+export function CartSummary({
+  subtotal,
+  onCheckout,
+  onSaveDraft,
+  disabled,
+}: CartSummaryProps) {
   const { tenant } = useAuth();
   const { t } = useI18n();
   const symbol = tenant?.currencySymbol ?? "Rs";
@@ -23,6 +29,7 @@ export function CartSummary({ subtotal, onCheckout, disabled }: CartSummaryProps
           {formatCurrency(subtotal, symbol)}
         </span>
       </div>
+      
       <button
         type="button"
         onClick={onCheckout}

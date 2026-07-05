@@ -131,7 +131,6 @@ salesRoutes.post("/", async (c) => {
       type: "sale",
       status: "completed",
       paymentMethod: parsed.data.paymentMethod,
-      billType: parsed.data.billType,
       subtotal: total,
       total,
       customerName: parsed.data.customerName?.trim() || null,
@@ -160,7 +159,6 @@ salesRoutes.post("/", async (c) => {
       type: transaction!.type,
       status: transaction!.status,
       paymentMethod: transaction!.paymentMethod,
-      billType: transaction!.billType,
       subtotal: transaction!.subtotal,
       total: transaction!.total,
       customerName: transaction!.customerName,
@@ -192,25 +190,12 @@ salesRoutes.get("/daily-summary", async (c) => {
         gte(transactions.createdAt, todayStart),
         lt(transactions.createdAt, todayEnd),
       ),
-    )
-    .orderBy(transactions.createdAt);
+    );
 
   const totalRevenue = todaySales.reduce(
     (sum: number, sale: { total: string }) => sum + parseFloat(sale.total),
     0,
   );
-
-  // Split totals by bill type — priced vs unpriced — both stamped with their own createdAt
-  const billTypeBreakdown = {
-    priced: { count: 0, revenue: 0 },
-    unpriced: { count: 0, revenue: 0 },
-  };
-
-  for (const sale of todaySales) {
-    const key = sale.billType === "unpriced" ? "unpriced" : "priced";
-    billTypeBreakdown[key].count += 1;
-    billTypeBreakdown[key].revenue += parseFloat(sale.total);
-  }
 
   const breakdown = await db
     .select({
@@ -244,16 +229,6 @@ salesRoutes.get("/daily-summary", async (c) => {
       totalRevenue: roundMoney(totalRevenue),
       transactionCount: todaySales.length,
       avgOrderValue: todaySales.length > 0 ? roundMoney(totalRevenue / todaySales.length) : "0.00",
-      billTypeBreakdown: {
-        priced: {
-          count: billTypeBreakdown.priced.count,
-          revenue: roundMoney(billTypeBreakdown.priced.revenue),
-        },
-        unpriced: {
-          count: billTypeBreakdown.unpriced.count,
-          revenue: roundMoney(billTypeBreakdown.unpriced.revenue),
-        },
-      },
       productBreakdown: breakdown.map((row: {
         productId: string;
         productName: string;
@@ -266,15 +241,6 @@ salesRoutes.get("/daily-summary", async (c) => {
         totalQuantity: parseFloat(row.totalQuantity).toFixed(3),
         unit: row.unit,
         totalRevenue: parseFloat(row.totalRevenue).toFixed(2),
-      })),
-      transactions: todaySales.map((sale) => ({
-        id: sale.id,
-        receiptNumber: sale.receiptNumber,
-        billType: sale.billType,
-        total: sale.total,
-        customerName: sale.customerName,
-        customerPhone: sale.customerPhone,
-        createdAt: sale.createdAt.toISOString(),
       })),
     },
   });
@@ -292,7 +258,6 @@ salesRoutes.get("/:id", async (c) => {
       type: transactions.type,
       status: transactions.status,
       paymentMethod: transactions.paymentMethod,
-      billType: transactions.billType,
       subtotal: transactions.subtotal,
       total: transactions.total,
       customerName: transactions.customerName,

@@ -13,7 +13,6 @@ interface ProductCardProps {
 
 function ProductImage({ src, alt }: { src: string | null | undefined; alt: string }) {
   const [errored, setErrored] = useState(false);
-
   if (!src || errored) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-slate-100">
@@ -35,26 +34,51 @@ function ProductImage({ src, alt }: { src: string | null | undefined; alt: strin
       </div>
     );
   }
-
   return (
-    <img
-      src={src}
-      alt={alt}
-      className="h-full w-full object-cover"
-      onError={() => setErrored(true)}
-    />
+    <img src={src} alt={alt} className="h-full w-full object-cover" onError={() => setErrored(true)} />
   );
+}
+
+function isKgProduct(unit: string) {
+  return unit.toLowerCase() === "kg";
 }
 
 export function ProductCard({ product, onAdd }: ProductCardProps) {
   const { tenant } = useAuth();
   const { t } = useI18n();
-  const [quantity, setQuantity] = useState("1");
+  const [quantity, setQuantity] = useState("");
+  const [inputUnit, setInputUnit] = useState<"kg" | "g">("kg");
+
+  const showToggle = isKgProduct(product.unit);
+
+  const handleToggleUnit = () => {
+    const current = parseFloat(quantity);
+    if (isNaN(current) || quantity === "") {
+      setInputUnit((u) => (u === "kg" ? "g" : "kg"));
+      return;
+    }
+    if (inputUnit === "kg") {
+      setQuantity(String(Math.round(current * 1000)));
+      setInputUnit("g");
+    } else {
+      setQuantity(String(parseFloat((current / 1000).toFixed(3))));
+      setInputUnit("kg");
+    }
+  };
 
   const handleAdd = () => {
-    const qty = parseFloat(quantity);
-    if (qty > 0) onAdd(product, qty);
+    const raw = parseFloat(quantity);
+    if (isNaN(raw) || raw <= 0) return;
+    const qtyInKg = showToggle && inputUnit === "g" ? raw / 1000 : raw;
+    onAdd(product, qtyInKg);
+    setQuantity("");
+    setInputUnit("kg");
   };
+
+  const kgEquivalent =
+    showToggle && inputUnit === "g" && quantity !== "" && !isNaN(parseFloat(quantity))
+      ? parseFloat((parseFloat(quantity) / 1000).toFixed(3))
+      : null;
 
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
@@ -67,9 +91,7 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
           <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">
             {product.token}
           </p>
-          <h3 className="mt-1 text-lg font-semibold text-slate-900">
-            {product.name}
-          </h3>
+          <h3 className="mt-1 text-lg font-semibold text-slate-900">{product.name}</h3>
           <p className="mt-1 text-sm text-slate-500">
             {formatCurrency(product.currentPrice, tenant?.currencySymbol ?? "Rs")}{" "}
             {t.pos.perUnit} {product.unit}
@@ -77,23 +99,48 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min="0.001"
-            step="0.001"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-emerald-500"
-            aria-label={t.pos.quantity}
-          />
+          <div className="relative flex-1">
+            <input
+              type="number"
+              min="0.001"
+              step="any"
+              inputMode="decimal"
+              value={quantity}
+              placeholder={showToggle ? `Weight in ${inputUnit}` : `Qty (${product.unit})`}
+              onChange={(e) => setQuantity(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+              className="w-full rounded-lg border border-slate-200 py-2.5 pl-3 pr-14 text-base outline-none focus:border-emerald-500"
+              aria-label={t.pos.quantity}
+            />
+            {showToggle ? (
+              <button
+                type="button"
+                onClick={handleToggleUnit}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700 hover:bg-emerald-200 transition-colors"
+                title="Toggle between grams and kilograms"
+              >
+                {inputUnit}
+              </button>
+            ) : (
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
+                {product.unit}
+              </span>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={handleAdd}
-            className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 active:scale-[0.98]"
+            disabled={quantity === "" || isNaN(parseFloat(quantity)) || parseFloat(quantity) <= 0}
+            className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t.pos.addToCart}
           </button>
         </div>
+
+        {kgEquivalent !== null && (
+          <p className="mt-1.5 text-xs text-emerald-600">= {kgEquivalent} kg</p>
+        )}
       </div>
     </div>
   );

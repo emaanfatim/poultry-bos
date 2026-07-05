@@ -17,9 +17,7 @@ export default function PricesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [products, setProducts] = useState
-    Array<{ id: string; name: string; unit: string; currentPrice: string }>
-  >([]);
+  const [products, setProducts] = useState<Array<{ id: string; name: string; unit: string; currentPrice: string }>>([]);
 
   useEffect(() => {
     if (!isOwner) return;
@@ -69,7 +67,7 @@ export default function PricesPage() {
         token,
         changedProducts.map((p) => ({
           productId: p.id,
-          currentPrice: prices[p.id] ?? p.currentPrice,
+          price: prices[p.id] ?? p.currentPrice,
         })),
       );
       setOriginalPrices({ ...prices });

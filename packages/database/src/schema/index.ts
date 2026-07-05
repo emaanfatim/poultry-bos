@@ -1,5 +1,7 @@
 ﻿import {
   boolean,
+  integer,
+  jsonb,
   numeric,
   pgTable,
   text,
@@ -45,7 +47,6 @@ export const users = pgTable(
     branchId: uuid("branch_id")
       .notNull()
       .references(() => branches.id),
-    // username unique per tenant — two different shops can have the same username
     username: text("username").notNull(),
     passwordHash: text("password_hash").notNull(),
     displayName: text("display_name").notNull(),
@@ -56,7 +57,6 @@ export const users = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    // username must be unique within a tenant, not globally
     uniqueIndex("users_tenant_username_idx").on(table.tenantId, table.username),
   ],
 );
@@ -73,7 +73,6 @@ export const productCategories = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    // token unique per tenant
     uniqueIndex("product_categories_tenant_token_idx").on(table.tenantId, table.token),
   ],
 );
@@ -93,7 +92,6 @@ export const productSubCategories = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    // token unique per tenant
     uniqueIndex("product_sub_categories_tenant_token_idx").on(table.tenantId, table.token),
   ],
 );
@@ -119,11 +117,9 @@ export const products = pgTable(
       .notNull()
       .default("active"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    // tracks when price was last changed — required for price history reporting
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    // token unique per tenant
     uniqueIndex("products_tenant_token_idx").on(table.tenantId, table.token),
   ],
 );
@@ -138,7 +134,6 @@ export const transactions = pgTable(
     branchId: uuid("branch_id")
       .notNull()
       .references(() => branches.id),
-    // receipt number unique per tenant — two tenants can have the same receipt number string
     receiptNumber: text("receipt_number").notNull(),
     type: text("type", { enum: ["sale", "purchase"] }).notNull().default("sale"),
     status: text("status", { enum: ["completed", "voided", "refunded"] })
@@ -147,17 +142,14 @@ export const transactions = pgTable(
     paymentMethod: text("payment_method", { enum: ["cash", "card", "wallet"] })
       .notNull()
       .default("cash"),
-    // priced bill vs unpriced delivery note — stamped at creation, never changes after
     billType: text("bill_type", { enum: ["priced", "unpriced"] })
       .notNull()
       .default("priced"),
     subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull().default("0"),
     total: numeric("total", { precision: 10, scale: 2 }).notNull().default("0"),
     notes: text("notes"),
-    // mandatory for unpriced bills, optional for priced bills — enforced at the API layer
     customerName: text("customer_name"),
     customerPhone: text("customer_phone"),
-    // void tracking — required by requirements doc Section 13.3.5
     voidedAt: timestamp("voided_at", { withTimezone: true }),
     voidedBy: uuid("voided_by").references(() => users.id),
     voidReason: text("void_reason"),
@@ -167,7 +159,6 @@ export const transactions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    // receipt number unique per tenant, not globally
     uniqueIndex("transactions_tenant_receipt_idx").on(table.tenantId, table.receiptNumber),
   ],
 );
@@ -183,11 +174,40 @@ export const transactionLineItems = pgTable("transaction_line_items", {
   productId: uuid("product_id")
     .notNull()
     .references(() => products.id),
-  // stored at time of sale — never changes even if product is renamed/repriced
   productName: text("product_name").notNull(),
   unit: text("unit").notNull(),
   quantity: numeric("quantity", { precision: 10, scale: 3 }).notNull(),
   rate: numeric("rate", { precision: 10, scale: 2 }).notNull(),
   lineTotal: numeric("line_total", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Draft carts — saved mid-session, no expiry, deleted manually or on resume
+export const drafts = pgTable("drafts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  branchId: uuid("branch_id")
+    .notNull()
+    .references(() => branches.id),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id),
+  draftNumber: integer("draft_number").notNull(),
+  customerName: text("customer_name"),
+  customerPhone: text("customer_phone"),
+  items: jsonb("items")
+    .notNull()
+    .$type<
+      Array<{
+        productId: string;
+        productName: string;
+        quantity: number;
+        rate: string;
+        unit: string;
+      }>
+    >(),
+  subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull().default("0"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

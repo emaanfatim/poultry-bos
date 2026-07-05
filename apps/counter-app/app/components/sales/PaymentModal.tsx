@@ -5,6 +5,7 @@ import type { BillType } from "@repo/types";
 import { useAuth } from "../../providers/AuthProvider";
 import { useI18n } from "../../providers/I18nProvider";
 import { formatCurrency } from "../../services/sales";
+import { validatePhone } from "../../utils/phoneValidation";
 
 interface CustomerInfo {
   name: string;
@@ -38,24 +39,36 @@ export function PaymentModal({
 
   if (!isOpen) return null;
 
+  // Name error — only required for unpriced
   const nameError =
     requireCustomer && touched.name && !name.trim()
       ? "Customer name is required for unpriced bills"
       : null;
 
-  const phoneError =
-    requireCustomer && touched.phone && !phone.trim()
-      ? "Phone number is required for unpriced bills"
-      : null;
+  // Phone validation — format check always runs if something is typed,
+  // required check only for unpriced
+  const phoneValidation = validatePhone(phone);
+  const phoneError = (() => {
+    if (!touched.phone) return null;
+    if (requireCustomer && !phone.trim()) return "Phone number is required for unpriced bills";
+    if (phone.trim() && !phoneValidation.valid) return phoneValidation.error;
+    return null;
+  })();
 
   const canSubmit =
     !isProcessing &&
-    (requireCustomer ? name.trim().length > 0 && phone.trim().length > 0 : true);
+    (requireCustomer
+      ? name.trim().length > 0 &&
+        phone.trim().length > 0 &&
+        phoneValidation.valid
+      : !phone.trim() || phoneValidation.valid); // if priced and phone typed, must be valid format
 
   const handleConfirm = () => {
+    setTouched({ name: true, phone: true });
     if (requireCustomer) {
-      setTouched({ name: true, phone: true });
-      if (!name.trim() || !phone.trim()) return;
+      if (!name.trim() || !phone.trim() || !phoneValidation.valid) return;
+    } else {
+      if (phone.trim() && !phoneValidation.valid) return;
     }
     onConfirm(billType, { name: name.trim(), phone: phone.trim() });
   };
@@ -77,7 +90,7 @@ export function PaymentModal({
           {formatCurrency(total, tenant?.currencySymbol ?? "Rs")}
         </p>
 
-        {/* ── Bill Type ───────────────────────────── */}
+        {/* Bill Type toggle */}
         <div className="mt-5">
           <p className="mb-2 text-sm font-medium text-slate-700">{t.receipt.billType}</p>
           <div className="grid grid-cols-2 gap-3">
@@ -109,7 +122,7 @@ export function PaymentModal({
           </div>
         </div>
 
-        {/* ── Customer Info ───────────────────────────── */}
+        {/* Customer info */}
         <div className="mt-5 space-y-3">
           <div>
             <label className="mb-1 flex items-center gap-1 text-sm font-medium text-slate-700">
@@ -127,9 +140,7 @@ export function PaymentModal({
               onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
               placeholder="e.g. Ahmed Ali"
               className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-emerald-400 ${
-                nameError
-                  ? "border-red-400 bg-red-50"
-                  : "border-slate-200 focus:border-emerald-400"
+                nameError ? "border-red-400 bg-red-50" : "border-slate-200 focus:border-emerald-400"
               }`}
             />
             {nameError && <p className="mt-1 text-xs text-red-500">{nameError}</p>}
@@ -149,14 +160,16 @@ export function PaymentModal({
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               onBlur={() => setTouched((prev) => ({ ...prev, phone: true }))}
-              placeholder="e.g. 0300-1234567"
+              placeholder="e.g. 0300-1234567 or +923001234567"
               className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-emerald-400 ${
-                phoneError
-                  ? "border-red-400 bg-red-50"
-                  : "border-slate-200 focus:border-emerald-400"
+                phoneError ? "border-red-400 bg-red-50" : "border-slate-200 focus:border-emerald-400"
               }`}
             />
             {phoneError && <p className="mt-1 text-xs text-red-500">{phoneError}</p>}
+            {/* Show green tick when valid */}
+            {touched.phone && phone.trim() && phoneValidation.valid && !phoneError && (
+              <p className="mt-1 text-xs text-emerald-600">✓ Valid phone number</p>
+            )}
           </div>
 
           {requireCustomer && (
@@ -183,25 +196,9 @@ export function PaymentModal({
           >
             {isProcessing ? (
               <span className="flex items-center justify-center gap-2">
-                <svg
-                  className="h-4 w-4 animate-spin"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
+                <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
                 Processing...
               </span>

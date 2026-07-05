@@ -8,6 +8,7 @@ import { authRoutes } from "./routes/auth.js";
 import { productRoutes } from "./routes/products.js";
 import { salesRoutes } from "./routes/sales.js";
 import { categoryRoutes } from "./routes/categories";
+import { draftsRoutes } from "./routes/drafts.js";
 
 
 dotenv.config({
@@ -37,6 +38,7 @@ app.route("/auth", authRoutes);
 app.route("/products", productRoutes);
 app.route("/sales", salesRoutes);
 app.route("/categories", categoryRoutes);
+app.route("/drafts", draftsRoutes);
 
 const port = Number(process.env.PORT ?? 4000);
 
