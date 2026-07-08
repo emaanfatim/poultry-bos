@@ -36,13 +36,13 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
   // Falls back to just its priced unit if none configured yet.
   const availableUnits = product.units && product.units.length > 0 ? product.units : [product.unit];
   const [selectedUnit, setSelectedUnit] = useState<Unit>(product.unit);
-  const showUnitToggle = availableUnits.length > 1;
+  const showUnitDropdown = availableUnits.length > 1;
 
   const symbol = tenant?.currencySymbol ?? "Rs";
 
-  const cycleUnit = () => {
-    const idx = availableUnits.findIndex((u) => u.id === selectedUnit.id);
-    const next = availableUnits[(idx + 1) % availableUnits.length]!;
+  const handleUnitChange = (unitId: string) => {
+    const next = availableUnits.find((u) => u.id === unitId);
+    if (!next) return;
 
     const current = parseFloat(quantity);
     if (!isNaN(current) && current > 0) {
@@ -89,21 +89,25 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
               step="any"
               inputMode="decimal"
               value={quantity}
-              placeholder={`Qty in ${selectedUnit.code}`}
+              placeholder="Enter weight"
               onChange={(e) => setQuantity(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-              className="w-full rounded-lg border border-slate-200 py-2.5 pl-3 pr-16 text-base outline-none focus:border-emerald-500"
+              className="w-full rounded-lg border border-slate-200 py-2.5 pl-3 pr-20 text-base outline-none focus:border-emerald-500"
               aria-label={t.pos.quantity}
             />
-            {showUnitToggle ? (
-              <button
-                type="button"
-                onClick={cycleUnit}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700 hover:bg-emerald-200 transition-colors"
-                title={`Switch unit (${availableUnits.map((u) => u.code).join(" → ")})`}
+            {showUnitDropdown ? (
+              <select
+                value={selectedUnit.id}
+                onChange={(e) => handleUnitChange(e.target.value)}
+                aria-label="Unit"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 appearance-none rounded-md bg-emerald-100 py-1 pl-2 pr-6 text-xs font-bold text-emerald-700 outline-none hover:bg-emerald-200 transition-colors cursor-pointer bg-[url('data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%23047857%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_0.35rem_center] bg-[length:0.85rem]"
               >
-                {selectedUnit.code}
-              </button>
+                {availableUnits.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.code}
+                  </option>
+                ))}
+              </select>
             ) : (
               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
                 {selectedUnit.code}
