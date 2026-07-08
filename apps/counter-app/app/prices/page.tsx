@@ -77,7 +77,7 @@ export default function PricesPage() {
         token,
         changedProducts.map((p) => ({
           productId: p.id,
-          currentPrice: prices[p.id] ?? p.currentPrice,
+          price: prices[p.id] ?? p.currentPrice,
         })),
       );
       setOriginalPrices({ ...prices });
