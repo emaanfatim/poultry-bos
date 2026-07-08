@@ -89,7 +89,7 @@ export default function PosPage() {
           productName: item.productName,
           quantity: item.quantity,
           rate: item.rate,
-          unit: item.unit,
+          unit: item.unit.code,
         })),
         subtotal: cart.subtotal,
       });
@@ -109,12 +109,27 @@ export default function PosPage() {
     }
     cart.clearCart();
     for (const item of draft.items) {
+      const matchingProduct = products.find((p) => p.id === item.productId);
+      const resolvedUnit =
+        matchingProduct?.units?.find((u) => u.code === item.unit) ??
+        matchingProduct?.unit ?? {
+          // Fallback if the product (or that specific sellable unit) was
+          // deleted/changed since this draft was saved — keeps the draft
+          // resumable instead of crashing, using the code as a best-effort
+          // display label.
+          id: item.unit,
+          name: item.unit,
+          code: item.unit,
+          type: "count" as const,
+          isBase: true,
+          isActive: true,
+        };
       cart.addItem(
         {
           id: item.productId,
           name: item.productName,
           currentPrice: item.rate,
-          unit: item.unit,
+          unit: resolvedUnit,
           token: "",
           categoryName: "",
           subCategoryName: "",
