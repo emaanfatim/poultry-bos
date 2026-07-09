@@ -17,8 +17,9 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
   const { t } = useI18n();
   const symbol = tenant?.currencySymbol ?? "Rs";
 
-  // Any logged-in cashier can generate either document format.
-  const [billType, setBillType] = useState<BillType>("priced");
+  // Locked in at checkout — changing it here wouldn't update the saved
+  // transaction record, so it's shown as read-only rather than editable.
+  const [billType] = useState<BillType>(transaction.billType ?? "priced");
   const [notes, setNotes] = useState(transaction.notes ?? "");
   const [isExportingPdf, setIsExportingPdf] = useState(false);
 
@@ -175,15 +176,21 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
   return (
     <div className="mx-auto max-w-lg">
       <div className="mb-4 print:hidden">
-        <p className="mb-2 text-sm font-medium text-slate-700">{t.receipt.billType}</p>
+        <p className="mb-2 text-sm font-medium text-slate-700">
+          {t.receipt.billType}{" "}
+          <span className="text-xs font-normal text-slate-400">
+            (locked in at checkout)
+          </span>
+        </p>
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={() => setBillType("priced")}
-            className={`rounded-xl border-2 p-3 text-left transition-all ${
+            disabled
+            aria-disabled="true"
+            className={`cursor-not-allowed rounded-xl border-2 p-3 text-left transition-all ${
               isPriced
                 ? "border-emerald-500 bg-emerald-50"
-                : "border-slate-200 hover:border-slate-300"
+                : "border-slate-200 bg-slate-50 opacity-50"
             }`}
           >
             <p className="text-sm font-semibold text-slate-900">{t.receipt.pricedBill}</p>
@@ -192,11 +199,12 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
 
           <button
             type="button"
-            onClick={() => setBillType("unpriced")}
-            className={`rounded-xl border-2 p-3 text-left transition-all ${
+            disabled
+            aria-disabled="true"
+            className={`cursor-not-allowed rounded-xl border-2 p-3 text-left transition-all ${
               !isPriced
                 ? "border-emerald-500 bg-emerald-50"
-                : "border-slate-200 hover:border-slate-300"
+                : "border-slate-200 bg-slate-50 opacity-50"
             }`}
           >
             <p className="text-sm font-semibold text-slate-900">{t.receipt.deliveryNote}</p>

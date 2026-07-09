@@ -106,7 +106,7 @@ export default function SummaryPage() {
                   </div>
 
                   <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <p className="text-sm text-slate-500">Unpriced (Delivery Notes)</p>
+                    <p className="text-sm text-slate-500">Unpaid / Credit Bills</p>
                     <p className="mt-2 text-2xl font-bold text-slate-900">
                       {summary.billTypeBreakdown.unpriced.count}
                       <span className="ml-2 text-sm font-normal text-slate-400">

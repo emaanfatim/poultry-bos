@@ -174,7 +174,7 @@ export function PaymentModal({
 
           {requireCustomer && (
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              Customer details are required for unpriced (delivery note) bills.
+              Customer details are required for unpaid / credit bills, so you can follow up for payment later.
             </p>
           )}
         </div>
