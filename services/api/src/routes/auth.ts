@@ -75,6 +75,8 @@ authRoutes.post("/login", async (c) => {
     displayName: user.displayName,
     role: user.role,
     canIssuePricedBill: true,
+    requiresTillCount: user.requiresTillCount,
+    canReceiveHandover: user.canReceiveHandover,
   };
   const token = await new SignJWT({ user: authUser, branchToken: branch.token })
     .setProtectedHeader({ alg: "HS256" })
@@ -103,7 +105,7 @@ authRoutes.get("/me", async (c) => {
   const { jwtVerify } = await import("jose");
   try {
     const { payload } = await jwtVerify(header.slice(7), getJwtSecret());
-    const user = payload.user as {
+    const tokenUser = payload.user as {
       id: string;
       tenantId: string;
       branchId: string;
@@ -114,20 +116,38 @@ authRoutes.get("/me", async (c) => {
     };
 
     const db = getDb();
+
+    // Re-fetch from the DB rather than trusting the JWT claims — an owner
+    // may have flipped requiresTillCount / canReceiveHandover mid-shift.
+    const [dbUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, tokenUser.id))
+      .limit(1);
+
+    if (!dbUser || !dbUser.isActive) {
+      return c.json({ error: "Invalid or expired token" }, 401);
+    }
+
     const [tenant] = await db
       .select()
       .from(tenants)
-      .where(eq(tenants.id, user.tenantId))
+      .where(eq(tenants.id, tokenUser.tenantId))
       .limit(1);
 
     const [branch] = await db
       .select()
       .from(branches)
-      .where(eq(branches.id, user.branchId))
+      .where(eq(branches.id, tokenUser.branchId))
       .limit(1);
 
     return c.json({
-      user: { ...user, canIssuePricedBill: true },
+      user: {
+        ...tokenUser,
+        canIssuePricedBill: true,
+        requiresTillCount: dbUser.requiresTillCount,
+        canReceiveHandover: dbUser.canReceiveHandover,
+      },
       tenant: tenant ? formatTenant(tenant) : null,
       branch: branch
         ? { id: branch.id, name: branch.name, token: branch.token }

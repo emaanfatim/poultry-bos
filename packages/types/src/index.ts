@@ -86,6 +86,8 @@ export interface AuthUser {
   displayName: string;
   role: UserRole;
   canIssuePricedBill: boolean;
+  requiresTillCount: boolean;
+  canReceiveHandover: boolean;
 }
 
 export interface LoginResponse {
@@ -165,4 +167,97 @@ export interface CreateDraftRequest {
   customerPhone?: string;
   items: DraftItem[];
   subtotal: string;
+}
+
+// ─── Till module ────────────────────────────────────────────────────────
+
+export type DenominationType = "note" | "coin";
+export type TillSessionStatus = "open" | "closed";
+export type TillCountType = "opening" | "closing";
+
+export interface CurrencyDenomination {
+  id: string;
+  value: string;
+  type: DenominationType;
+  isActive: boolean;
+}
+
+export interface DenominationCountLine {
+  denominationId: string;
+  value: string;
+  type: DenominationType;
+  quantity: number;
+}
+
+export interface TillSession {
+  id: string;
+  status: TillSessionStatus;
+  userId: string;
+  userName?: string;
+  branchId: string;
+  openingCash: string;
+  expectedClosingCash?: string | null;
+  actualClosingCash?: string | null;
+  variance?: string | null;
+  openedAt: string;
+  closedAt?: string | null;
+  handoverId?: string | null;
+  openingCounts?: DenominationCountLine[];
+  closingCounts?: DenominationCountLine[];
+}
+
+export interface OpenTillRequest {
+  openingCash: number;
+  denominationCounts?: Array<{ denominationId: string; quantity: number }>;
+}
+
+export interface CloseTillRequest {
+  actualClosingCash: number;
+  denominationCounts?: Array<{ denominationId: string; quantity: number }>;
+}
+
+export interface TillHandover {
+  id: string;
+  receivedBy: string;
+  receivedByName?: string;
+  branchId: string;
+  totalExpected: string;
+  totalReceived: string;
+  variance: string;
+  createdAt: string;
+  sessions: TillSession[];
+}
+
+export interface CreateHandoverRequest {
+  tillSessionIds: string[];
+  totalReceived: number;
+}
+
+export interface TillReportRow {
+  userId: string;
+  userName: string;
+  sessionId: string;
+  status: TillSessionStatus;
+  openingCash: string;
+  expectedClosingCash?: string | null;
+  actualClosingCash?: string | null;
+  variance?: string | null;
+  openedAt: string;
+  closedAt?: string | null;
+  handedOver: boolean;
+}
+
+export interface TillReportSummary {
+  date: string;
+  rows: TillReportRow[];
+  totalVariance: string;
+  openSessionsCount: number;
+  closedSessionsCount: number;
+}
+
+export interface CashierTillSettings {
+  userId: string;
+  requiresTillCount: boolean;
+  canReceiveHandover: boolean;
+  reportsToId?: string | null;
 }

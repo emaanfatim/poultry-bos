@@ -10,6 +10,8 @@ import { salesRoutes } from "./routes/sales.js";
 import { categoryRoutes } from "./routes/categories";
 import { draftsRoutes } from "./routes/drafts.js";
 import { unitsRoutes } from "./routes/units.js";
+import { tillRoutes } from "./routes/till.js";
+import { usersRoutes } from "./routes/users.js";
 
 
 dotenv.config({
@@ -41,6 +43,8 @@ app.route("/sales", salesRoutes);
 app.route("/categories", categoryRoutes);
 app.route("/drafts", draftsRoutes);
 app.route("/units", unitsRoutes);
+app.route("/till", tillRoutes);
+app.route("/users", usersRoutes);
 
 const port = Number(process.env.PORT ?? 4000);
 

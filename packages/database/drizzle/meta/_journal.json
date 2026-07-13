@@ -85,6 +85,13 @@
       "when": 1783273660636,
       "tag": "0011_plain_living_lightning",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1783300000000,
+      "tag": "0012_till_module",
+      "breakpoints": true
     }
   ]
 }

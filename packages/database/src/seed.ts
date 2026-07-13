@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { closeDb, createDb } from "./index.ts";
 import {
   branches,
+  currencyDenominations,
   productCategories,
   productSubCategories,
   productUnits,
@@ -58,32 +59,63 @@ async function main() {
   const cashierHash = await bcrypt.hash("cashier123", 10);
   const backupCashierHash = await bcrypt.hash("senior123", 10);
 
-  await db.insert(users).values([
-    {
+  const [ownerUser] = await db
+    .insert(users)
+    .values({
       tenantId: tenant!.id,
       branchId: branch!.id,
       username: "owner",
       passwordHash: ownerHash,
       displayName: "Shop Owner",
       role: "owner",
-    },
-    {
-      tenantId: tenant!.id,
-      branchId: branch!.id,
-      username: "cashier",
-      passwordHash: cashierHash,
-      displayName: "Counter Cashier",
-      role: "cashier",
-    },
-    {
+      canReceiveHandover: true,
+    })
+    .returning();
+
+  // "senior" is promoted to Chief Cashier: trusted enough to skip counting
+  // their own till, and permitted to receive the end-of-day handover.
+  const [seniorUser] = await db
+    .insert(users)
+    .values({
       tenantId: tenant!.id,
       branchId: branch!.id,
       username: "senior",
       passwordHash: backupCashierHash,
       displayName: "Backup Cashier",
       role: "cashier",
-    },
+      requiresTillCount: false,
+      canReceiveHandover: true,
+    })
+    .returning();
+
+  // Regular cashier must count every note/coin, and reports to "senior".
+  await db.insert(users).values({
+    tenantId: tenant!.id,
+    branchId: branch!.id,
+    username: "cashier",
+    passwordHash: cashierHash,
+    displayName: "Counter Cashier",
+    role: "cashier",
+    requiresTillCount: true,
+    reportsToId: seniorUser!.id,
+  });
+
+  // ── Currency Denominations (Till module — set once per tenant) ────────
+  await db.insert(currencyDenominations).values([
+    { tenantId: tenant!.id, value: "5000.00", type: "note" },
+    { tenantId: tenant!.id, value: "1000.00", type: "note" },
+    { tenantId: tenant!.id, value: "500.00", type: "note" },
+    { tenantId: tenant!.id, value: "100.00", type: "note" },
+    { tenantId: tenant!.id, value: "50.00", type: "note" },
+    { tenantId: tenant!.id, value: "20.00", type: "note" },
+    { tenantId: tenant!.id, value: "10.00", type: "note" },
+    { tenantId: tenant!.id, value: "10.00", type: "coin" },
+    { tenantId: tenant!.id, value: "5.00", type: "coin" },
+    { tenantId: tenant!.id, value: "2.00", type: "coin" },
+    { tenantId: tenant!.id, value: "1.00", type: "coin" },
   ]);
+
+  void ownerUser;
 
   // ── Units ─────────────────────────────────────────────────────────────
   // Base units first (no baseUnitId / conversionFactor)
@@ -300,7 +332,9 @@ async function main() {
 
   console.log("Seed complete");
   console.log("  Owner login:   owner / owner123");
-  console.log("  Cashier login: cashier / cashier123");
+  console.log("  Cashier login: cashier / cashier123 (must count till, reports to senior)");
+  console.log("  Senior login:  senior / senior123 (Chief Cashier — skips counting, receives handovers)");
+  console.log("  Currency denominations seeded: 5000/1000/500/100/50/20/10 notes, 10/5/2/1 coins");
   console.log("");
   console.log("  Units seeded: kg, g, maund, lb, piece, dozen");
   console.log("  Category structure seeded:");

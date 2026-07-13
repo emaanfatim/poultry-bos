@@ -6,7 +6,7 @@ import { useAuth } from "../../providers/AuthProvider";
 import { useI18n } from "../../providers/I18nProvider";
 
 export function Header() {
-  const { user, tenant, branch, isOwner, logout } = useAuth();
+  const { user, tenant, branch, isOwner, canReceiveHandover, logout } = useAuth();
   const { t, locale, setLocale } = useI18n();
   const pathname = usePathname();
   const router = useRouter();
@@ -52,6 +52,9 @@ export function Header() {
           {navLink("/pos", t.nav.pos)}
           {isOwner && navLink("/prices", t.nav.prices)}
           {navLink("/summary", t.nav.summary)}
+          {navLink("/till/close", t.nav.till)}
+          {canReceiveHandover && navLink("/till/handover", t.nav.handover)}
+          {canReceiveHandover && navLink("/till/report", t.till.reportTitle)}
           {isOwner && navLink("/settings/units", "⚙ Units")}
         </nav>
 

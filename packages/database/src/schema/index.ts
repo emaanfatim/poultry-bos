@@ -1,4 +1,5 @@
-﻿import {
+﻿import { sql } from "drizzle-orm";
+import {
   boolean,
   integer,
   jsonb,
@@ -54,6 +55,16 @@ export const users = pgTable(
       .notNull()
       .default("cashier"),
     isActive: boolean("is_active").notNull().default(true),
+    // Till module — per-cashier settings (Handover doc, Part 1 §2 and §6).
+    // Whether this cashier must enter an itemized denomination breakdown when
+    // opening/closing a till, rather than just a lump-sum amount.
+    requiresTillCount: boolean("requires_till_count").notNull().default(false),
+    // Whether this staff member is allowed to receive/confirm an end-of-day
+    // handover from other cashiers (i.e. can act as a "Chief Cashier").
+    canReceiveHandover: boolean("can_receive_handover").notNull().default(false),
+    // Reporting line: which staff member this cashier's cash rolls up to at
+    // handover time. Nullable — not everyone needs a supervisor set.
+    reportsToId: uuid("reports_to_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -259,5 +270,118 @@ export const drafts = pgTable("drafts", {
       }>
     >(),
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull().default("0"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ─── Till module (see handover-till-module.md) ────────────────────────────
+
+// The actual notes/coins a shop's currency uses. Set once per tenant during
+// onboarding (Super Admin) — never hardcoded to PKR, and never hard-deleted:
+// a discontinued note is turned inactive so historical counts still resolve.
+export const currencyDenominations = pgTable(
+  "currency_denominations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    value: numeric("value", { precision: 10, scale: 2 }).notNull(),
+    type: text("type", { enum: ["note", "coin"] }).notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("currency_denominations_tenant_value_type_idx").on(
+      table.tenantId,
+      table.value,
+      table.type,
+    ),
+  ],
+);
+
+// One cashier's shift, start to end. Expected closing cash is recomputed from
+// real sales/refunds at close time; variance is expected vs. what was
+// actually counted. Once a session is folded into a handover, handoverId is
+// set and it can no longer be edited or re-handed-over.
+export const tillSessions = pgTable(
+  "till_sessions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    status: text("status", { enum: ["open", "closed"] })
+      .notNull()
+      .default("open"),
+    openingCash: numeric("opening_cash", { precision: 10, scale: 2 }).notNull(),
+    expectedClosingCash: numeric("expected_closing_cash", { precision: 10, scale: 2 }),
+    actualClosingCash: numeric("actual_closing_cash", { precision: 10, scale: 2 }),
+    variance: numeric("variance", { precision: 10, scale: 2 }),
+    openedAt: timestamp("opened_at", { withTimezone: true }).notNull().defaultNow(),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    handoverId: uuid("handover_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // A cashier can only have one open till session at a time.
+    uniqueIndex("till_sessions_one_open_per_user_idx")
+      .on(table.userId)
+      .where(sql`${table.status} = 'open'`),
+  ],
+);
+
+// Itemized "N × denomination" breakdown for cashiers who are required to
+// count. Captured at both opening and closing so a mismatch is traceable to
+// a specific note/coin, not just a vague total.
+export const tillDenominationCounts = pgTable(
+  "till_denomination_counts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    tillSessionId: uuid("till_session_id")
+      .notNull()
+      .references(() => tillSessions.id),
+    denominationId: uuid("denomination_id")
+      .notNull()
+      .references(() => currencyDenominations.id),
+    countType: text("count_type", { enum: ["opening", "closing"] }).notNull(),
+    quantity: integer("quantity").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("till_denomination_counts_session_denom_type_idx").on(
+      table.tillSessionId,
+      table.denominationId,
+      table.countType,
+    ),
+  ],
+);
+
+// End-of-day consolidation: owner (or a permitted "Chief Cashier") collects
+// cash from one or more closed till sessions and recounts the combined
+// total. Catches a second, separate kind of mismatch — cash lost or gained
+// in the handover itself, not in any one cashier's shift.
+export const tillHandovers = pgTable("till_handovers", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  branchId: uuid("branch_id")
+    .notNull()
+    .references(() => branches.id),
+  receivedBy: uuid("received_by")
+    .notNull()
+    .references(() => users.id),
+  totalExpected: numeric("total_expected", { precision: 10, scale: 2 }).notNull(),
+  totalReceived: numeric("total_received", { precision: 10, scale: 2 }).notNull(),
+  variance: numeric("variance", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
