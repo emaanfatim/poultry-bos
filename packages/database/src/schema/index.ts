@@ -94,6 +94,13 @@ export const users = pgTable(
     // canReceiveHandover above, rather than introducing a generic RBAC
     // catalog this codebase doesn't otherwise have.
     canApplyCustomRounding: boolean("can_apply_custom_rounding").notNull().default(false),
+    // §7 — "billing.create_miscellaneous" in the handover doc. Same
+    // per-staff-ID boolean pattern as canApplyCustomRounding above, rather
+    // than introducing a generic RBAC catalog this codebase doesn't
+    // otherwise have. Grantable per staff member, not role-wide.
+    canCreateMiscellaneousBills: boolean("can_create_miscellaneous_bills")
+      .notNull()
+      .default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -248,6 +255,13 @@ export const transactions = pgTable(
       .notNull()
       .default("priced"),
     subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull().default("0"),
+    // §4 step 3 — percentage or manual flat discount applied to the
+    // subtotal before any charge category calculates. discountAmount is the
+    // resolved currency amount (stored regardless of discountType, so the
+    // itemized receipt never has to re-derive it from a percentage + a
+    // since-changed subtotal).
+    discountType: text("discount_type", { enum: ["percentage", "flat"] }),
+    discountAmount: numeric("discount_amount", { precision: 10, scale: 2 }).notNull().default("0"),
     // §4 step 6 — full-precision total before rounding. Tax reporting and
     // the rounding summary always read this, never `total`.
     trueTotal: numeric("true_total", { precision: 14, scale: 2 }).notNull().default("0"),

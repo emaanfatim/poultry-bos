@@ -12,6 +12,10 @@ import { draftsRoutes } from "./routes/drafts.js";
 import { unitsRoutes } from "./routes/units.js";
 import { tillRoutes } from "./routes/till.js";
 import { usersRoutes } from "./routes/users.js";
+import { chargeCategoryRoutes } from "./routes/charge-categories.js";
+import { chargeAssignmentRoutes } from "./routes/charge-assignments.js";
+import { chargeResolutionRoutes } from "./routes/charge-resolution.js";
+import { paymentMethodRoutes } from "./routes/payment-methods.js";
 
 
 dotenv.config({
@@ -45,6 +49,11 @@ app.route("/drafts", draftsRoutes);
 app.route("/units", unitsRoutes);
 app.route("/till", tillRoutes);
 app.route("/users", usersRoutes);
+
+app.route("/charge-categories", chargeCategoryRoutes);
+app.route("/charge-assignments", chargeAssignmentRoutes);
+app.route("/charge-resolution", chargeResolutionRoutes);
+app.route("/payment-methods", paymentMethodRoutes);
 
 const port = Number(process.env.PORT ?? 4000);
 
