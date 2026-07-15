@@ -1,1 +1,0 @@
-ALTER TABLE "drafts" ADD COLUMN "customer_phone" text;
