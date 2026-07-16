@@ -11,15 +11,24 @@
 // override always wins — e.g. a product-level `override_off` beats a
 // category-level `override_on`, even though category is checked first.
 
+import { Hono } from "hono";
 import { and, eq, inArray } from "drizzle-orm";
 import {
   chargeCategories,
   chargeRateLines,
+  paymentMethods,
   productChargeCategoryAssignment,
   products,
 } from "@repo/database";
 import type { Database } from "@repo/database";
-import type { ChargeCategoryLike, ChargeRateLineLike } from "./charge-engine";
+import { getDb } from "../db";
+import {
+  selectApplicableRateLine,
+  type ChargeCategoryLike,
+  type ChargeRateLineLike,
+} from "../lib/charge-engine";
+import { authMiddleware } from "../middleware/auth";
+import type { AppVariables } from "../types";
 
 type AssignmentLevel = "branch" | "product_category" | "product_sub_category" | "product";
 
@@ -202,3 +211,71 @@ export function toChargeRateLineLike(
     dependsOnChargeCategoryId: rateLine.dependsOnChargeCategoryId,
   };
 }
+
+// ─── Preview endpoint ───────────────────────────────────────────────────────
+//
+// GET /charge-resolution/product/:productId — lets the cashier UI show which
+// Charge Categories (and their currently-applicable rate line) would apply
+// to a product before it's added to the cart, without running a full
+// checkout. Read-only: never persists anything, never itself decides which
+// rate line "wins" for the final bill — sales.ts is still the only place
+// that calls calculateCharges and writes transaction_charge_lines. Every
+// cashier can hit this (it's informational, not a config write), unlike the
+// charge-categories/charge-assignments routes which are owner-only.
+export const chargeResolutionRoutes = new Hono<{ Variables: AppVariables }>();
+
+chargeResolutionRoutes.use("*", authMiddleware);
+
+chargeResolutionRoutes.get("/product/:productId", async (c) => {
+  const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
+  const productId = c.req.param("productId");
+  const paymentMethodId = c.req.query("paymentMethodId");
+  const db = getDb();
+
+  const context = await loadProductChargeContext(db, tenantId, branchId, productId);
+  if (!context) {
+    return c.json({ error: "Product not found" }, 404);
+  }
+
+  const resolved = await resolveChargeCategoriesForProduct(db, tenantId, context);
+
+  const activePaymentMethods = await db
+    .select()
+    .from(paymentMethods)
+    .where(and(eq(paymentMethods.tenantId, tenantId), eq(paymentMethods.isActive, true)));
+  const paymentMethodName = new Map(activePaymentMethods.map((pm) => [pm.id, pm.name]));
+
+  return c.json({
+    charges: resolved.map(({ category, rateLines }) => {
+      const rateLineLikes = rateLines.map(toChargeRateLineLike);
+      const applicable = selectApplicableRateLine(rateLineLikes, { paymentMethodId });
+      return {
+        category: {
+          id: category.id,
+          name: category.name,
+          nameSecondaryLanguage: category.nameSecondaryLanguage,
+          categoryType: category.categoryType,
+          isRegulatoryReportable: category.isRegulatoryReportable,
+        },
+        // All configured rate lines, for a UI that wants to show the full
+        // set of manual_selection options (e.g. "Small Box" / "Large Box").
+        rateLines: rateLines.map((rl) => ({
+          id: rl.id,
+          calculationType: rl.calculationType,
+          value: rl.value,
+          scope: rl.scope,
+          conditionType: rl.conditionType,
+          conditionPaymentMethodName: rl.conditionPaymentMethodId
+            ? paymentMethodName.get(rl.conditionPaymentMethodId) ?? null
+            : null,
+          manualSelectionLabel: rl.manualSelectionLabel,
+        })),
+        // The rate line that would actually apply right now, given the
+        // optional ?paymentMethodId query param (no manual selection yet,
+        // since the cashier hasn't picked one at preview time).
+        applicableRateLineId: applicable?.id ?? null,
+      };
+    }),
+  });
+});

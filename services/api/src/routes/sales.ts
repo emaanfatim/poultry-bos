@@ -35,7 +35,7 @@ import {
   resolveChargeCategoriesForProduct,
   toChargeCategoryLike,
   toChargeRateLineLike,
-} from "../lib/charge-resolution";
+} from "./charge-resolution";
 import { authMiddleware } from "../middleware/auth";
 import type { AppVariables } from "../types";
 
@@ -428,6 +428,7 @@ salesRoutes.post("/", async (c) => {
       type: transaction!.type,
       status: transaction!.status,
       paymentMethodId: transaction!.paymentMethodId,
+      paymentMethodName: paymentMethod.name,
       billType: transaction!.billType,
       subtotal: transaction!.subtotal,
       discountType: transaction!.discountType,
@@ -534,6 +535,7 @@ salesRoutes.get("/:id", async (c) => {
       type: transactions.type,
       status: transactions.status,
       paymentMethodId: transactions.paymentMethodId,
+      paymentMethodName: paymentMethods.name,
       billType: transactions.billType,
       subtotal: transactions.subtotal,
       discountType: transactions.discountType,
@@ -549,6 +551,7 @@ salesRoutes.get("/:id", async (c) => {
     })
     .from(transactions)
     .innerJoin(users, eq(transactions.createdBy, users.id))
+    .leftJoin(paymentMethods, eq(transactions.paymentMethodId, paymentMethods.id))
     .where(and(eq(transactions.id, transactionId), eq(transactions.tenantId, tenantId)))
     .limit(1);
 

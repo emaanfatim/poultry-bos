@@ -3,9 +3,15 @@ import type {
   DailySummary,
   LoginRequest,
   LoginResponse,
+  PaymentMethod,
   Transaction,
 } from "@repo/types";
 import { api } from "./api";
+
+export async function fetchPaymentMethods(token: string): Promise<PaymentMethod[]> {
+  const data = await api.get<{ paymentMethods: PaymentMethod[] }>("/payment-methods", token);
+  return data.paymentMethods;
+}
 
 export async function login(credentials: LoginRequest): Promise<LoginResponse> {
   return api.post<LoginResponse>("/auth/login", credentials);

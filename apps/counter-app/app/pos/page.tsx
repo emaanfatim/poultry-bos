@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { BillType, Draft } from "@repo/types";
+import type { BillType, Draft, PaymentMethod } from "@repo/types";
 import { AuthGuard } from "../components/common/AuthGuard";
 import { Header } from "../components/common/Header";
 import { Cart } from "../components/cart/Cart";
@@ -16,7 +16,7 @@ import { useProducts } from "../hooks/useProducts";
 import { useDrafts } from "../hooks/useDrafts";
 import { useAuth } from "../providers/AuthProvider";
 import { useI18n } from "../providers/I18nProvider";
-import { createSale } from "../services/sales";
+import { createSale, fetchPaymentMethods } from "../services/sales";
 
 export default function PosPage() {
   const { token, tenant } = useAuth();
@@ -32,6 +32,17 @@ export default function PosPage() {
   const [showDrafts, setShowDrafts] = useState(false);
   const [showSaveDraft, setShowSaveDraft] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [cashPaymentMethod, setCashPaymentMethod] = useState<PaymentMethod | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    fetchPaymentMethods(token)
+      .then((methods) => {
+        const cash = methods.find((m) => m.name.toLowerCase().includes("cash")) ?? methods[0];
+        setCashPaymentMethod(cash ?? null);
+      })
+      .catch(() => setCashPaymentMethod(null));
+  }, [token]);
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -48,10 +59,19 @@ export default function PosPage() {
   const handleConfirmPayment = async (
     billType: BillType,
     customer: { name: string; phone: string },
+    roundingMethod?: "exact" | "round_up",
   ) => {
     if (!token || cart.items.length === 0) return;
     if (billType === "unpriced" && (!customer.name.trim() || !customer.phone.trim())) {
       alert("Customer name and phone are required for unpriced bills.");
+      return;
+    }
+    if (!cashPaymentMethod) {
+      alert("No active payment method found. Please add one in Settings first.");
+      return;
+    }
+    if (cashPaymentMethod.requiresRounding && !roundingMethod) {
+      alert("Please select a rounding option.");
       return;
     }
     setIsProcessing(true);
@@ -62,10 +82,11 @@ export default function PosPage() {
           quantity: item.quantity,
           unitId: item.unit.id,
         })),
-        paymentMethod: "cash",
+        paymentMethodId: cashPaymentMethod.id,
         billType,
         customerName: customer.name || undefined,
         customerPhone: customer.phone || undefined,
+        roundingMethod: cashPaymentMethod.requiresRounding ? roundingMethod : undefined,
       });
       cart.clearCart();
       setShowPayment(false);
@@ -194,6 +215,7 @@ export default function PosPage() {
           total={cart.subtotal}
           isOpen={showPayment}
           isProcessing={isProcessing}
+          requiresRounding={cashPaymentMethod?.requiresRounding ?? false}
           onConfirm={handleConfirmPayment}
           onCancel={() => setShowPayment(false)}
         />

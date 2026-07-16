@@ -1,6 +1,6 @@
 export type ProductStatus = "active" | "inactive";
 export type UserRole = "owner" | "cashier";
-export type BillType = "priced" | "unpriced";
+export type BillType = "priced" | "unpriced" | "miscellaneous";
 export type UnitType = "weight" | "volume" | "count";
 
 export interface TenantConfig {
@@ -66,7 +66,8 @@ export interface Transaction {
   receiptNumber: string;
   type: string;
   status: string;
-  paymentMethod: string;
+  paymentMethodId: string;
+  paymentMethodName: string;
   billType: BillType;
   subtotal: string;
   total: string;
@@ -88,6 +89,11 @@ export interface AuthUser {
   canIssuePricedBill: boolean;
   requiresTillCount: boolean;
   canReceiveHandover: boolean;
+  // §4.1 — gates the Round Down and Custom cash-rounding options at checkout.
+  canApplyCustomRounding: boolean;
+  // §7 — "billing.create_miscellaneous" in the handover doc; per-staff-ID,
+  // not role-wide.
+  canCreateMiscellaneousBills: boolean;
 }
 
 export interface LoginResponse {
@@ -102,13 +108,22 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  requiresRounding: boolean;
+  isActive: boolean;
+}
+
 export interface CreateSaleRequest {
   items: Array<{ productId: string; quantity: number; unitId?: string }>;
-  paymentMethod?: string;
+  paymentMethodId: string;
   notes?: string;
   billType?: BillType;
   customerName?: string;
   customerPhone?: string;
+  roundingMethod?: "exact" | "round_up" | "round_down" | "custom";
+  customAmount?: number;
 }
 
 export interface BulkPriceUpdate {

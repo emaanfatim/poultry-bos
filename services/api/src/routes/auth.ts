@@ -77,6 +77,8 @@ authRoutes.post("/login", async (c) => {
     canIssuePricedBill: true,
     requiresTillCount: user.requiresTillCount,
     canReceiveHandover: user.canReceiveHandover,
+    canApplyCustomRounding: user.canApplyCustomRounding,
+    canCreateMiscellaneousBills: user.canCreateMiscellaneousBills,
   };
   const token = await new SignJWT({ user: authUser, branchToken: branch.token })
     .setProtectedHeader({ alg: "HS256" })
@@ -147,6 +149,8 @@ authRoutes.get("/me", async (c) => {
         canIssuePricedBill: true,
         requiresTillCount: dbUser.requiresTillCount,
         canReceiveHandover: dbUser.canReceiveHandover,
+        canApplyCustomRounding: dbUser.canApplyCustomRounding,
+        canCreateMiscellaneousBills: dbUser.canCreateMiscellaneousBills,
       },
       tenant: tenant ? formatTenant(tenant) : null,
       branch: branch

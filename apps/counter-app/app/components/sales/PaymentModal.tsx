@@ -12,11 +12,18 @@ interface CustomerInfo {
   phone: string;
 }
 
+type RoundingChoice = "exact" | "round_up";
+
 interface PaymentModalProps {
   total: string;
   isOpen: boolean;
   isProcessing: boolean;
-  onConfirm: (billType: BillType, customer: CustomerInfo) => void;
+  requiresRounding?: boolean;
+  onConfirm: (
+    billType: BillType,
+    customer: CustomerInfo,
+    roundingMethod?: RoundingChoice,
+  ) => void;
   onCancel: () => void;
 }
 
@@ -24,6 +31,7 @@ export function PaymentModal({
   total,
   isOpen,
   isProcessing,
+  requiresRounding = false,
   onConfirm,
   onCancel,
 }: PaymentModalProps) {
@@ -34,6 +42,7 @@ export function PaymentModal({
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [touched, setTouched] = useState({ name: false, phone: false });
+  const [roundingMethod, setRoundingMethod] = useState<RoundingChoice | null>(null);
 
   const requireCustomer = billType === "unpriced";
 
@@ -57,6 +66,7 @@ export function PaymentModal({
 
   const canSubmit =
     !isProcessing &&
+    (requiresRounding ? roundingMethod !== null : true) &&
     (requireCustomer
       ? name.trim().length > 0 &&
         phone.trim().length > 0 &&
@@ -70,7 +80,8 @@ export function PaymentModal({
     } else {
       if (phone.trim() && !phoneValidation.valid) return;
     }
-    onConfirm(billType, { name: name.trim(), phone: phone.trim() });
+    if (requiresRounding && !roundingMethod) return;
+    onConfirm(billType, { name: name.trim(), phone: phone.trim() }, roundingMethod ?? undefined);
   };
 
   const resetAndCancel = () => {
@@ -78,6 +89,7 @@ export function PaymentModal({
     setName("");
     setPhone("");
     setTouched({ name: false, phone: false });
+    setRoundingMethod(null);
     onCancel();
   };
 
@@ -178,6 +190,41 @@ export function PaymentModal({
             </p>
           )}
         </div>
+
+        {requiresRounding && (
+          <div className="mt-5">
+            <p className="mb-2 text-sm font-medium text-slate-700">
+              Rounding <span className="text-red-500">*</span>
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setRoundingMethod("exact")}
+                className={`rounded-xl border-2 p-3 text-left transition-all ${
+                  roundingMethod === "exact"
+                    ? "border-emerald-500 bg-emerald-50"
+                    : "border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <p className="text-sm font-semibold text-slate-900">Exact</p>
+                <p className="mt-0.5 text-xs text-slate-500">Charge the precise total</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRoundingMethod("round_up")}
+                className={`rounded-xl border-2 p-3 text-left transition-all ${
+                  roundingMethod === "round_up"
+                    ? "border-emerald-500 bg-emerald-50"
+                    : "border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <p className="text-sm font-semibold text-slate-900">Round Up</p>
+                <p className="mt-0.5 text-xs text-slate-500">Round up to nearest increment</p>
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 flex gap-3">
           <button

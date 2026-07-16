@@ -87,7 +87,7 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
     text(`${t.receipt.cashier}: ${transaction.createdByName ?? user?.displayName ?? ""}`, margin, 10);
     y -= 14;
     if (isPriced) {
-      text(`${t.receipt.payment}: ${transaction.paymentMethod}`, margin, 10);
+      text(`${t.receipt.payment}: ${transaction.paymentMethodName}`, margin, 10);
       y -= 14;
     }
     rule(4);
@@ -266,7 +266,7 @@ export function ReceiptPreview({ transaction, onPrint, onNewSale }: ReceiptPrevi
           {isPriced && (
             <div className="flex justify-between">
               <span className="text-slate-500">{t.receipt.payment}</span>
-              <span className="capitalize">{transaction.paymentMethod}</span>
+              <span className="capitalize">{transaction.paymentMethodName}</span>
             </div>
           )}
         </div>
