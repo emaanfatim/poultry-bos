@@ -53,10 +53,16 @@ const categorySchema = z.object({
   rateLines: z.array(rateLineSchema).min(1, "At least one rate line is required"),
 });
 
-function validateExactlyOneDefault(rateLines: z.infer<typeof rateLineSchema>[]) {
+// A category no longer needs a `default` fallback line — the owner may
+// intentionally leave a charge unresolved for anything that doesn't match a
+// specific condition (selectApplicableRateLine in charge-engine.ts already
+// returns null and the charge is simply skipped for that bill, rather than
+// crashing checkout). Still guard against *more than one* default line,
+// since that would be ambiguous about which one resolution should pick.
+function validateAtMostOneDefault(rateLines: z.infer<typeof rateLineSchema>[]) {
   const defaults = rateLines.filter((rl) => rl.conditionType === "default");
-  if (defaults.length !== 1) {
-    throw new Error("Exactly one rate line with conditionType = default is required");
+  if (defaults.length > 1) {
+    throw new Error("Only one rate line with conditionType = default is allowed");
   }
 }
 
@@ -189,7 +195,7 @@ chargeCategoryRoutes.post("/", requireOwner, async (c) => {
   }
 
   try {
-    validateExactlyOneDefault(parsed.data.rateLines);
+    validateAtMostOneDefault(parsed.data.rateLines);
   } catch (e) {
     return c.json({ error: (e as Error).message }, 400);
   }
@@ -363,7 +369,7 @@ chargeCategoryRoutes.put("/:id", requireOwner, async (c) => {
   }
 
   try {
-    validateExactlyOneDefault(parsed.data.rateLines);
+    validateAtMostOneDefault(parsed.data.rateLines);
   } catch (e) {
     return c.json({ error: (e as Error).message }, 400);
   }

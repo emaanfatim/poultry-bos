@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { BillType, CartLineItem } from "@repo/types";
+import type { BillType, CartLineItem, PaymentMethod } from "@repo/types";
 import { useAuth } from "../../providers/AuthProvider";
 import { useI18n } from "../../providers/I18nProvider";
 import { fetchMyDiscountSettings, formatCurrency } from "../../services/sales";
@@ -24,14 +24,26 @@ interface PaymentModalProps {
   items?: CartLineItem[];
   isOpen: boolean;
   isProcessing: boolean;
-  requiresRounding?: boolean;
-  roundingMethod?: "exact" | "round_up" | "round_down";
+  // Full active payment-method catalog (owner-managed). Shown as tabs for
+  // priced bills so the cashier picks one at checkout; unpriced (delivery
+  // note) bills don't show a customer-facing payment step, so we fall back
+  // to a sensible default behind the scenes (see defaultPaymentMethodId).
+  paymentMethods?: PaymentMethod[];
   onConfirm: (
     billType: BillType,
     customer: CustomerInfo,
+    paymentMethodId: string,
     discount?: DiscountInput,
   ) => void;
   onCancel: () => void;
+}
+
+// Prefer "Cash" as the initial tab/default when nothing else is selected
+// yet — matches how the till/cash-drawer flow already assumes cash unless
+// told otherwise.
+function pickDefaultMethod(methods: PaymentMethod[]): PaymentMethod | null {
+  if (methods.length === 0) return null;
+  return methods.find((m) => m.name.toLowerCase().includes("cash")) ?? methods[0]!;
 }
 
 export function PaymentModal({
@@ -39,8 +51,7 @@ export function PaymentModal({
   items = [],
   isOpen,
   isProcessing,
-  requiresRounding = false,
-  roundingMethod = "exact",
+  paymentMethods = [],
   onConfirm,
   onCancel,
 }: PaymentModalProps) {
@@ -51,6 +62,23 @@ export function PaymentModal({
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [touched, setTouched] = useState({ name: false, phone: false });
+
+  const activeMethods = paymentMethods.filter((m) => m.isActive);
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string | null>(null);
+
+  // Re-pick a default whenever the modal opens or the catalog changes, so a
+  // stale selection from a previous sale never carries over silently.
+  useEffect(() => {
+    if (!isOpen) return;
+    const fallback = pickDefaultMethod(activeMethods);
+    setSelectedPaymentMethodId(fallback?.id ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, paymentMethods]);
+
+  const selectedPaymentMethod =
+    activeMethods.find((m) => m.id === selectedPaymentMethodId) ?? null;
+  const requiresRounding = selectedPaymentMethod?.requiresRounding ?? false;
+  const roundingMethod = selectedPaymentMethod?.roundingMethod ?? "exact";
 
   // Discount module — only surfaced at all when the owner has granted this
   // cashier canApplyDiscount. Which of the two type buttons is enabled
@@ -153,9 +181,18 @@ export function PaymentModal({
     discountNumber <= 0 ||
     (discountTypeAllowed && !discountExceedsCap && !noEligibleProductsInCart);
 
+  // Priced bills need a payment method picked; unpriced bills never show the
+  // tabs so they just need *some* default method to exist behind the scenes.
+  const needsPaymentMethodChoice = billType === "priced";
+  const fallbackMethod = pickDefaultMethod(activeMethods);
+  const effectivePaymentMethodId = needsPaymentMethodChoice
+    ? selectedPaymentMethodId
+    : (selectedPaymentMethodId ?? fallbackMethod?.id ?? null);
+
   const canSubmit =
     !isProcessing &&
     discountValid &&
+    !!effectivePaymentMethodId &&
     (requireCustomer
       ? name.trim().length > 0 &&
         phone.trim().length > 0 &&
@@ -170,13 +207,14 @@ export function PaymentModal({
       if (phone.trim() && !phoneValidation.valid) return;
     }
     if (!discountValid) return;
+    if (!effectivePaymentMethodId) return;
 
     const discount: DiscountInput | undefined =
       showDiscount && discountNumber > 0
         ? { type: discountType, value: discountNumber }
         : undefined;
 
-    onConfirm(billType, { name: name.trim(), phone: phone.trim() }, discount);
+    onConfirm(billType, { name: name.trim(), phone: phone.trim() }, effectivePaymentMethodId, discount);
   };
 
   const resetAndCancel = () => {
@@ -193,7 +231,6 @@ export function PaymentModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         <h2 className="text-xl font-bold text-slate-900">{t.payment.title}</h2>
-        <p className="mt-2 text-sm text-slate-600">{t.payment.cashOnly}</p>
 
         {showDiscount && previewDiscountAmount > 0 ? (
           <div className="mt-4 space-y-1">
@@ -389,6 +426,37 @@ export function PaymentModal({
             </button>
           </div>
         </div>
+
+        {/* Payment method — owner-managed catalog, tabs only for priced
+            bills. Unpriced/delivery-note bills don't take payment at
+            counter, so there's nothing for the cashier to pick here. */}
+        {needsPaymentMethodChoice && (
+          <div className="mt-5">
+            <p className="mb-2 text-sm font-medium text-slate-700">Payment Method</p>
+            {activeMethods.length === 0 ? (
+              <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                No active payment methods found. Ask the owner to add one in Settings.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {activeMethods.map((method) => (
+                  <button
+                    key={method.id}
+                    type="button"
+                    onClick={() => setSelectedPaymentMethodId(method.id)}
+                    className={`rounded-xl border-2 px-4 py-2 text-sm font-semibold transition-all ${
+                      selectedPaymentMethodId === method.id
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                        : "border-slate-200 text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    {method.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Customer info */}
         <div className="mt-5 space-y-3">

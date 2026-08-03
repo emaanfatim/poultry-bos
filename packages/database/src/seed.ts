@@ -365,6 +365,12 @@ async function main() {
     requiresRounding: false,
   });
 
+  await db.insert(paymentMethods).values({
+    tenantId: tenant!.id,
+    name: "Digital Wallet",
+    requiresRounding: false,
+  });
+
   // ── Charge Categories (§1/§4/§6) ─────────────────────────────────────────
   // GST — the doc's worked example: a lower cash rate, everything else
   // (card, bank transfer, ...) falls through to the `default` line. Assigned
@@ -417,70 +423,6 @@ async function main() {
     overrideType: "override_on",
   });
 
-  // Packaging — an "other" category, per_product scope, cashier picks a
-  // size at checkout via manual_selection (§1). Demonstrates the
-  // manual-selection condition type alongside GST's payment-method one.
-  const packagingId = randomUUID();
-  const packagingVersionGroupId = randomUUID();
-
-  await db.insert(chargeCategories).values({
-    id: packagingId,
-    tenantId: tenant!.id,
-    branchId: branch!.id,
-    versionGroupId: packagingVersionGroupId,
-    name: "Packaging",
-    categoryType: "other",
-    isRegulatoryReportable: false,
-    countsTowardOtherBases: true,
-    refundableOnReturn: false,
-    isCurrent: true,
-    isActive: true,
-    createdByUserId: ownerUser!.id,
-  });
-
-  await db.insert(chargeRateLines).values([
-    {
-      tenantId: tenant!.id,
-      chargeCategoryId: packagingId,
-      calculationType: "fixed",
-      value: "20.0000",
-      scope: "per_product",
-      conditionType: "manual_selection",
-      manualSelectionLabel: "Small Box",
-    },
-    {
-      tenantId: tenant!.id,
-      chargeCategoryId: packagingId,
-      calculationType: "fixed",
-      value: "40.0000",
-      scope: "per_product",
-      conditionType: "manual_selection",
-      manualSelectionLabel: "Large Box",
-    },
-    {
-      tenantId: tenant!.id,
-      chargeCategoryId: packagingId,
-      calculationType: "fixed",
-      value: "0.0000",
-      scope: "per_product",
-      conditionType: "default",
-    },
-  ]);
-
-  // Packaging is opt-in per product rather than branch-wide, so it's
-  // assigned to "Whole Bird" only (a product customers would ask to be
-  // boxed) rather than at branch level like GST above.
-  const wholeBird = seededProducts.find((p) => p.token === "P4");
-  if (wholeBird) {
-    await db.insert(productChargeCategoryAssignment).values({
-      tenantId: tenant!.id,
-      chargeCategoryId: packagingId,
-      assignmentLevel: "product",
-      targetId: wholeBird.id,
-      overrideType: "override_on",
-    });
-  }
-
   console.log("Seed complete");
   console.log("  Owner login:   owner / owner123");
   console.log("  Cashier login: cashier / cashier123 (must count till, reports to senior)");
@@ -495,10 +437,9 @@ async function main() {
   console.log("  Live Birds");
   console.log("    └── Broiler     → Broiler (Live), Broiler (Dressed)");
   console.log("");
-  console.log("  Payment methods seeded: Cash (rounding required), Card, Bank Transfer");
+  console.log("  Payment methods seeded: Cash (rounding required), Card, Bank Transfer, Digital Wallet");
   console.log("  Charge categories seeded:");
   console.log("    GST (tax, branch-wide)   — 15% cash / 17% everything else");
-  console.log("    Packaging (other, Whole Bird only) — Small Box Rs20 / Large Box Rs40");
   await closeDb();
 }
 

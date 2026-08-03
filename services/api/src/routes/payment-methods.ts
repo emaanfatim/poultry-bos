@@ -26,11 +26,47 @@ const updateSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+// Every tenant should always have these four in their catalog. Whenever the
+// list is requested, we check which of the four (by name) the tenant is
+// still missing and insert only those — so a tenant who already created
+// "Cash" and "JazzCash" still ends up with Card, Bank Transfer, and Digital
+// Wallet added alongside them. Once a default exists for a tenant (even if
+// the owner later renames, edits, or soft-deletes/deactivates it), it is
+// never re-created — the owner's edits are always respected.
+const DEFAULT_PAYMENT_METHODS = [
+  { name: "Cash", requiresRounding: true, roundingMethod: "exact" as const },
+  { name: "Card", requiresRounding: false, roundingMethod: "exact" as const },
+  { name: "Bank Transfer", requiresRounding: false, roundingMethod: "exact" as const },
+  { name: "Digital Wallet", requiresRounding: false, roundingMethod: "exact" as const },
+];
+
+async function ensureDefaultPaymentMethods(tenantId: string) {
+  const db = getDb();
+  const existing = await db
+    .select({ name: paymentMethods.name })
+    .from(paymentMethods)
+    .where(eq(paymentMethods.tenantId, tenantId));
+
+  const existingNames = new Set(existing.map((m) => m.name.trim().toLowerCase()));
+  const missing = DEFAULT_PAYMENT_METHODS.filter(
+    (m) => !existingNames.has(m.name.toLowerCase()),
+  );
+
+  if (missing.length === 0) return;
+
+  await db
+    .insert(paymentMethods)
+    .values(missing.map((m) => ({ tenantId, ...m })))
+    .onConflictDoNothing();
+}
+
 // GET /payment-methods — list (active-only unless includeInactive=1)
 paymentMethodRoutes.get("/", async (c) => {
   const tenantId = c.get("tenantId");
   const includeInactive = c.req.query("includeInactive") === "1";
   const db = getDb();
+
+  await ensureDefaultPaymentMethods(tenantId);
 
   const rows = await db
     .select()

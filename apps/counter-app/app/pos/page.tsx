@@ -35,16 +35,13 @@ export default function PosPage() {
   const [showDrafts, setShowDrafts] = useState(false);
   const [showSaveDraft, setShowSaveDraft] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
-  const [cashPaymentMethod, setCashPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
   useEffect(() => {
     if (!token) return;
     fetchPaymentMethods(token)
-      .then((methods) => {
-        const cash = methods.find((m) => m.name.toLowerCase().includes("cash")) ?? methods[0];
-        setCashPaymentMethod(cash ?? null);
-      })
-      .catch(() => setCashPaymentMethod(null));
+      .then((methods) => setPaymentMethods(methods))
+      .catch(() => setPaymentMethods([]));
   }, [token]);
 
   const filteredProducts = useMemo(() => {
@@ -62,6 +59,7 @@ export default function PosPage() {
   const handleConfirmPayment = async (
     billType: BillType,
     customer: { name: string; phone: string },
+    paymentMethodId: string,
     discount?: DiscountInput,
   ) => {
     if (!token || cart.items.length === 0) return;
@@ -69,7 +67,7 @@ export default function PosPage() {
       alert("Customer name and phone are required for unpriced bills.");
       return;
     }
-    if (!cashPaymentMethod) {
+    if (!paymentMethodId) {
       alert("No active payment method found. Please add one in Settings first.");
       return;
     }
@@ -81,7 +79,7 @@ export default function PosPage() {
           quantity: item.quantity,
           unitId: item.unit.id,
         })),
-        paymentMethodId: cashPaymentMethod.id,
+        paymentMethodId,
         billType,
         customerName: customer.name || undefined,
         customerPhone: customer.phone || undefined,
@@ -227,8 +225,7 @@ export default function PosPage() {
           items={cart.items}
           isOpen={showPayment}
           isProcessing={isProcessing}
-          requiresRounding={cashPaymentMethod?.requiresRounding ?? false}
-          roundingMethod={cashPaymentMethod?.roundingMethod ?? "exact"}
+          paymentMethods={paymentMethods}
           onConfirm={handleConfirmPayment}
           onCancel={() => setShowPayment(false)}
         />

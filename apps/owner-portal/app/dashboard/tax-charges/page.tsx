@@ -189,8 +189,8 @@ function TaxChargesContent() {
       return;
     }
     const defaults = form.rateLines.filter((rl) => rl.conditionType === "default");
-    if (defaults.length !== 1) {
-      setFormError("Exactly one rate line must be set as the default (fallback) line");
+    if (defaults.length > 1) {
+      setFormError("Only one rate line can be set as the default (fallback) line");
       return;
     }
     for (const rl of form.rateLines) {
@@ -813,9 +813,10 @@ function ChargeCategoryFormView({
                 </button>
               </div>
               <p className="mb-3 text-xs text-slate-400">
-                One rule must be the <span className="font-medium">default</span> — it&apos;s used
-                whenever none of the others match. Add more to charge a different rate by payment
-                method, or let the cashier pick from a list.
+                Optionally mark one rule as the <span className="font-medium">default</span> — it&apos;s
+                used whenever none of the others match. Add more to charge a different rate by
+                payment method, or let the cashier pick from a list. If you don&apos;t set a default,
+                this charge simply won&apos;t apply when nothing else matches.
               </p>
 
               <div className="space-y-3">
