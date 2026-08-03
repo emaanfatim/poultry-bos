@@ -1,0 +1,69 @@
+import "dotenv/config";
+import path from "node:path";
+import dotenv from "dotenv";
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { authRoutes } from "./routes/auth.js";
+import { productRoutes } from "./routes/products.js";
+import { salesRoutes } from "./routes/sales.js";
+import { categoryRoutes } from "./routes/categories";
+import { draftsRoutes } from "./routes/drafts.js";
+import { unitsRoutes } from "./routes/units.js";
+import { tillRoutes } from "./routes/till.js";
+import { usersRoutes } from "./routes/users.js";
+import { chargeCategoryRoutes } from "./routes/charge-categories.js";
+import { chargeAssignmentRoutes } from "./routes/charge-assignments.js";
+import { chargeResolutionRoutes } from "./routes/charge-resolution.js";
+import { paymentMethodRoutes } from "./routes/payment-methods.js";
+import { discountSettingsRoutes } from "./routes/discount-settings.js";
+import { tillSettingsRoutes } from "./routes/till-settings.js";
+
+
+dotenv.config({
+  path: path.resolve(process.cwd(), "../../.env"),
+});
+
+console.log("API DATABASE_URL =", process.env.DATABASE_URL);
+
+const app = new Hono();
+
+app.use(
+  "*",
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://localhost:3001",
+      "http://127.0.0.1:3001",
+      process.env.COUNTER_APP_URL ?? "",
+      process.env.OWNER_PORTAL_URL ?? "",
+    ].filter(Boolean),
+    allowHeaders: ["Content-Type", "Authorization"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  }),
+);
+
+app.get("/health", (c) => c.json({ status: "ok" }));
+
+app.route("/auth", authRoutes);
+app.route("/products", productRoutes);
+app.route("/sales", salesRoutes);
+app.route("/categories", categoryRoutes);
+app.route("/drafts", draftsRoutes);
+app.route("/units", unitsRoutes);
+app.route("/till", tillRoutes);
+app.route("/users", usersRoutes);
+
+app.route("/charge-categories", chargeCategoryRoutes);
+app.route("/charge-assignments", chargeAssignmentRoutes);
+app.route("/charge-resolution", chargeResolutionRoutes);
+app.route("/payment-methods", paymentMethodRoutes);
+app.route("/discount-settings", discountSettingsRoutes);
+app.route("/till-settings", tillSettingsRoutes);
+
+const port = Number(process.env.PORT ?? 4000);
+
+serve({ fetch: app.fetch, port });
+
+console.log(`API running on http://localhost:${port}`);

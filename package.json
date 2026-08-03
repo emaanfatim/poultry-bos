@@ -1,0 +1,31 @@
+{
+  "name": "poultry-bos",
+  "private": true,
+  "packageManager": "pnpm@10.16.1",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --filter=counter-app --filter=api --filter=owner-portal",
+    "dev:all": "turbo run dev",
+    "dev:api": "turbo run dev --filter=api",
+    "dev:counter": "turbo run dev --filter=counter-app",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "check-types": "turbo run check-types",
+    "db:generate": "pnpm --filter @repo/database db:generate",
+    "db:migrate": "pnpm --filter @repo/database db:migrate",
+    "db:seed": "pnpm --filter @repo/database db:seed",
+    "db:backfill-product-units": "pnpm --filter @repo/database db:backfill-product-units",
+    "db:setup": "pnpm db:migrate && pnpm db:seed"
+  },
+  "dependencies": {
+    "lucide-react": "^1.21.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.7.4",
+    "turbo": "^2.9.18",
+    "typescript": "5.9.2"
+  }
+}

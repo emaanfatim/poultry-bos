@@ -1,0 +1,13 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "nixpacksVersion": "1.29.1",
+    "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter owner-portal build"
+  },
+  "deploy": {
+    "startCommand": "pnpm --filter owner-portal start",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5
+  }
+}
