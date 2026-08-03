@@ -12,23 +12,14 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Form fields always render on a light (white/slate) surface in this app,
-   regardless of the device's OS light/dark mode preference. Without this,
-   inputs/selects/textareas inherit --foreground, which flips to a near-white
-   color in dark mode and becomes invisible against their white backgrounds. */
+/* Form fields always render on a light (white/slate) surface in this app.
+   Explicit color keeps typed text visible and consistent everywhere. */
 input,
 select,
 textarea {
