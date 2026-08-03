@@ -21,6 +21,16 @@ body {
   background: var(--background);
 }
 
+/* Form fields always render on a light (white/slate) surface in this app,
+   regardless of the device's OS light/dark mode preference. Without this,
+   inputs/selects/textareas inherit --foreground, which flips to a near-white
+   color in dark mode and becomes invisible against their white backgrounds. */
+input,
+select,
+textarea {
+  color: #0f172a;
+}
+
 * {
   box-sizing: border-box;
   padding: 0;
