@@ -29,13 +29,13 @@ export default function LoginPage() {
 
   return (
     <GuestGuard>
-      <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100 px-4">
+      <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-emerald-600 via-emerald-700 to-slate-900 px-4">
         <div className="w-full max-w-md">
           <div className="mb-6 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-xl font-bold text-white shadow-md">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl font-bold text-emerald-700 shadow-md">
               P
             </div>
-            <p className="text-sm font-medium text-slate-400">Poultry BOS</p>
+            <p className="text-sm font-medium text-emerald-50">Poultry BOS</p>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
