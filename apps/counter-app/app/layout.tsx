@@ -41,7 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-slate-50 antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} min-h-dvh bg-slate-50 antialiased`}
       >
         <I18nProvider>
           <AuthProvider>

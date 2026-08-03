@@ -74,7 +74,7 @@ function CategoriesPageContent() {
   // Block non-owners
   if (user?.role !== "owner") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-dvh items-center justify-center">
         <p className="text-slate-500">Access denied — owners only.</p>
       </div>
     );

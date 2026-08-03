@@ -27,7 +27,7 @@ export default function ReceiptPage() {
 
   return (
     <AuthGuard>
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-dvh flex-col">
         <Header />
         <main className="flex-1 p-4">
           {isLoading && <p className="text-center">{t.common.loading}</p>}

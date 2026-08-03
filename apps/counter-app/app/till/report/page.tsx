@@ -28,7 +28,7 @@ export default function TillReportPage() {
   if (!canReceiveHandover) {
     return (
       <AuthGuard>
-        <div className="flex min-h-screen flex-col">
+        <div className="flex min-h-dvh flex-col">
           <Header />
           <main className="mx-auto max-w-3xl p-8 text-center">
             <p className="text-slate-600">
@@ -42,7 +42,7 @@ export default function TillReportPage() {
 
   return (
     <AuthGuard>
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-dvh flex-col">
         <Header />
 
         <main className="mx-auto w-full max-w-5xl flex-1 p-4">

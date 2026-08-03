@@ -167,7 +167,7 @@ export default function PosPage() {
   return (
     <AuthGuard>
       <TillGuard>
-        <div className="flex min-h-screen flex-col">
+        <div className="flex min-h-dvh flex-col">
           <Header />
 
         <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 lg:flex-row">

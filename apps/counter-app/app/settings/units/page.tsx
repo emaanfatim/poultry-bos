@@ -49,7 +49,7 @@ export default function UnitsSettingsPage() {
   if (!isOwner) {
     return (
       <AuthGuard>
-        <div className="flex min-h-screen flex-col">
+        <div className="flex min-h-dvh flex-col">
           <Header />
           <main className="mx-auto max-w-3xl p-8 text-center">
             <p className="text-slate-600">Only the owner can manage units.</p>
@@ -132,7 +132,7 @@ export default function UnitsSettingsPage() {
 
   return (
     <AuthGuard>
-      <div className="flex min-h-screen flex-col bg-slate-50">
+      <div className="flex min-h-dvh flex-col bg-slate-50">
         <Header />
 
         <main className="mx-auto w-full max-w-4xl flex-1 p-4">

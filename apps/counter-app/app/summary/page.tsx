@@ -57,7 +57,7 @@ export default function SummaryPage() {
 
   return (
     <AuthGuard>
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-dvh flex-col">
         <Header />
 
         <main className="mx-auto w-full max-w-4xl flex-1 p-4">
