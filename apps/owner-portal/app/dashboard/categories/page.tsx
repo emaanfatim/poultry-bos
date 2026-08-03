@@ -4,6 +4,14 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../providers/AuthProvider";
 import { AuthGuard } from "../../components/AuthGuard";
 import { Header } from "../../components/Header";
+import {
+  fetchProductCategories,
+  createProductCategory,
+  deleteProductCategory,
+  createProductSubCategory,
+  deleteProductSubCategory,
+} from "../../services/productCategories";
+import { ApiError } from "../../services/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -20,30 +28,6 @@ interface Category {
   subCategories: SubCategory[];
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function getToken() {
-  return localStorage.getItem("token") ?? "";
-}
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-
-async function apiFetch(path: string, options?: RequestInit) {
-  const res = await fetch(`${API}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getToken()}`,
-      ...(options?.headers ?? {}),
-    },
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Request failed" }));
-    throw new Error(err.error ?? "Request failed");
-  }
-  return res.json();
-}
-
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function CategoriesPage() {
@@ -56,7 +40,7 @@ export default function CategoriesPage() {
 }
 
 function CategoriesPageContent() {
-  const { user } = useAuth();
+  const { token, user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -71,20 +55,12 @@ function CategoriesPageContent() {
     Record<string, { name: string; token: string; saving: boolean; open: boolean }>
   >({});
 
-  // Block non-owners
-  if (user?.role !== "owner") {
-    return (
-      <div className="flex min-h-dvh items-center justify-center">
-        <p className="text-slate-500">Access denied — owners only.</p>
-      </div>
-    );
-  }
-
-  // ─── Fetch ──────────────────────────────────────────────────────────────
-
   async function load() {
+    if (!token) return;
+    setLoading(true);
+    setError("");
     try {
-      const data: Category[] = await apiFetch("/api/categories");
+      const data = await fetchProductCategories(token);
       setCategories(data);
 
       // Init subform state for any new categories
@@ -98,47 +74,59 @@ function CategoriesPageContent() {
         return next;
       });
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to load");
+      setError(e instanceof ApiError ? e.message : "Failed to load categories");
     } finally {
       setLoading(false);
     }
   }
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+  // Called unconditionally, before the owner-only early return below, so
+  // hook call order never varies between renders (same fix as the
+  // Tax & Charges page's dependencyOptions useMemo).
   useEffect(() => {
     load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  // Block non-owners
+  if (user?.role !== "owner") {
+    return (
+      <div className="flex min-h-dvh items-center justify-center">
+        <p className="text-slate-500">Access denied — owners only.</p>
+      </div>
+    );
+  }
 
   // ─── Category Actions ────────────────────────────────────────────────────
 
   async function createCategory() {
-    if (!newCatName.trim() || !newCatToken.trim()) return;
+    if (!token || !newCatName.trim() || !newCatToken.trim()) return;
     setCatSaving(true);
     setError("");
     try {
-      await apiFetch("/api/categories", {
-        method: "POST",
-        body: JSON.stringify({ name: newCatName.trim(), token: newCatToken.trim() }),
+      await createProductCategory(token, {
+        name: newCatName.trim(),
+        token: newCatToken.trim(),
       });
       setNewCatName("");
       setNewCatToken("");
       await load();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to create category");
+      setError(e instanceof ApiError ? e.message : "Failed to create category");
     } finally {
       setCatSaving(false);
     }
   }
 
   async function deleteCategory(id: string) {
+    if (!token) return;
     if (!confirm("Delete this category and all its subcategories?")) return;
     setError("");
     try {
-      await apiFetch(`/api/categories/${id}`, { method: "DELETE" });
+      await deleteProductCategory(token, id);
       await load();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to delete category");
+      setError(e instanceof ApiError ? e.message : "Failed to delete category");
     }
   }
 
@@ -155,35 +143,34 @@ function CategoriesPageContent() {
   }
 
   async function createSubCategory(catId: string) {
+    if (!token) return;
     const form = subForms[catId];
     if (!form?.name.trim() || !form?.token.trim()) return;
     updateSubForm(catId, { saving: true });
     setError("");
     try {
-      await apiFetch("/api/categories/subcategories", {
-        method: "POST",
-        body: JSON.stringify({
-          categoryId: catId,
-          name: form.name.trim(),
-          token: form.token.trim(),
-        }),
+      await createProductSubCategory(token, {
+        categoryId: catId,
+        name: form.name.trim(),
+        token: form.token.trim(),
       });
       updateSubForm(catId, { name: "", token: "", saving: false, open: false });
       await load();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to create subcategory");
+      setError(e instanceof ApiError ? e.message : "Failed to create subcategory");
       updateSubForm(catId, { saving: false });
     }
   }
 
   async function deleteSubCategory(id: string) {
+    if (!token) return;
     if (!confirm("Delete this subcategory?")) return;
     setError("");
     try {
-      await apiFetch(`/api/categories/subcategories/${id}`, { method: "DELETE" });
+      await deleteProductSubCategory(token, id);
       await load();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to delete subcategory");
+      setError(e instanceof ApiError ? e.message : "Failed to delete subcategory");
     }
   }
 

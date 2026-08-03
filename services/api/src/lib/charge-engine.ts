@@ -13,7 +13,7 @@
 export type ChargeCategoryType = "tax" | "surcharge" | "other";
 export type CalculationType = "fixed" | "percentage";
 export type ChargeScope = "per_product" | "whole_bill";
-export type ConditionType = "payment_method" | "manual_selection" | "default";
+export type ConditionType = "payment_method" | "manual_selection";
 export type RoundingMethod = "exact" | "round_up" | "round_down" | "custom";
 
 export interface ChargeCategoryLike {
@@ -75,10 +75,10 @@ export interface CalculateChargesResult {
 
 /**
  * §1 rate-line resolution — picks the one rate line that applies out of a
- * category's set, in priority order: an exact payment-method match, then a
- * manual-selection match, then the mandatory `default` fallback. Returns
- * null only if the category has no `default` line configured (a data
- * problem — callers skip rather than crash checkout, per sales.ts).
+ * category's set: an exact payment-method match, or a manual-selection
+ * match. There is no fallback/default line anymore — if nothing matches the
+ * given context, this returns null and the charge is simply skipped for
+ * that bill (callers skip rather than crash checkout, per sales.ts).
  */
 export function selectApplicableRateLine(
   rateLines: ChargeRateLineLike[],
@@ -100,7 +100,7 @@ export function selectApplicableRateLine(
     );
     if (match) return match;
   }
-  return rateLines.find((rl) => rl.conditionType === "default") ?? null;
+  return null;
 }
 
 /**

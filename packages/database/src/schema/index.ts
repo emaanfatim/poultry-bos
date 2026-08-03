@@ -667,7 +667,7 @@ export const chargeRateLines = pgTable(
     value: numeric("value", { precision: 14, scale: 4 }).notNull(),
     scope: text("scope", { enum: ["per_product", "whole_bill"] }).notNull(),
     conditionType: text("condition_type", {
-      enum: ["payment_method", "manual_selection", "default"],
+      enum: ["payment_method", "manual_selection"],
     }).notNull(),
     conditionPaymentMethodId: uuid("condition_payment_method_id").references(
       () => paymentMethods.id,

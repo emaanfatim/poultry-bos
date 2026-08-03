@@ -411,7 +411,8 @@ async function main() {
       calculationType: "percentage",
       value: "17.0000",
       scope: "whole_bill",
-      conditionType: "default",
+      conditionType: "payment_method",
+      conditionPaymentMethodId: pmCard!.id,
     },
   ]);
 

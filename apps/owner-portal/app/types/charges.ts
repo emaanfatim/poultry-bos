@@ -7,7 +7,7 @@
 export type ChargeCategoryType = "tax" | "surcharge" | "other";
 export type CalculationType = "fixed" | "percentage";
 export type ChargeScope = "per_product" | "whole_bill";
-export type ConditionType = "payment_method" | "manual_selection" | "default";
+export type ConditionType = "payment_method" | "manual_selection";
 export type AssignmentLevel =
   | "branch"
   | "product_category"

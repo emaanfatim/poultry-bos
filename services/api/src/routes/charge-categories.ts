@@ -27,7 +27,7 @@ const rateLineSchema = z
     calculationType: z.enum(["fixed", "percentage"]),
     value: z.string().or(z.number()).transform((v) => String(v)),
     scope: z.enum(["per_product", "whole_bill"]),
-    conditionType: z.enum(["payment_method", "manual_selection", "default"]),
+    conditionType: z.enum(["payment_method", "manual_selection"]),
     conditionPaymentMethodId: z.string().uuid().optional().nullable(),
     manualSelectionLabel: z.string().optional().nullable(),
     dependsOnChargeCategoryId: z.string().uuid().optional().nullable(),
@@ -52,19 +52,6 @@ const categorySchema = z.object({
   refundableOnReturn: z.boolean().optional().default(true),
   rateLines: z.array(rateLineSchema).min(1, "At least one rate line is required"),
 });
-
-// A category no longer needs a `default` fallback line — the owner may
-// intentionally leave a charge unresolved for anything that doesn't match a
-// specific condition (selectApplicableRateLine in charge-engine.ts already
-// returns null and the charge is simply skipped for that bill, rather than
-// crashing checkout). Still guard against *more than one* default line,
-// since that would be ambiguous about which one resolution should pick.
-function validateAtMostOneDefault(rateLines: z.infer<typeof rateLineSchema>[]) {
-  const defaults = rateLines.filter((rl) => rl.conditionType === "default");
-  if (defaults.length > 1) {
-    throw new Error("Only one rate line with conditionType = default is allowed");
-  }
-}
 
 /**
  * §5 — validates every dependsOnChargeCategoryId in the incoming rate lines
@@ -192,12 +179,6 @@ chargeCategoryRoutes.post("/", requireOwner, async (c) => {
 
   if (!parsed.success) {
     return c.json({ error: parsed.error.issues[0]?.message ?? "Invalid data" }, 400);
-  }
-
-  try {
-    validateAtMostOneDefault(parsed.data.rateLines);
-  } catch (e) {
-    return c.json({ error: (e as Error).message }, 400);
   }
 
   const db = getDb();
@@ -368,12 +349,6 @@ chargeCategoryRoutes.put("/:id", requireOwner, async (c) => {
     return c.json({ error: parsed.error.issues[0]?.message ?? "Invalid data" }, 400);
   }
 
-  try {
-    validateAtMostOneDefault(parsed.data.rateLines);
-  } catch (e) {
-    return c.json({ error: (e as Error).message }, 400);
-  }
-
   const db = getDb();
   const [previous] = await db
     .select()
@@ -460,7 +435,7 @@ chargeCategoryRoutes.delete("/:id", requireOwner, async (c) => {
       calculationType: rl.calculationType as "fixed" | "percentage",
       value: rl.value,
       scope: rl.scope as "per_product" | "whole_bill",
-      conditionType: rl.conditionType as "payment_method" | "manual_selection" | "default",
+      conditionType: rl.conditionType as "payment_method" | "manual_selection",
       conditionPaymentMethodId: rl.conditionPaymentMethodId,
       manualSelectionLabel: rl.manualSelectionLabel,
       dependsOnChargeCategoryId: rl.dependsOnChargeCategoryId,

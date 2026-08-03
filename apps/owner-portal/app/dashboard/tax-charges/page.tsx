@@ -49,7 +49,9 @@ function emptyRateLine(): ChargeRateLine {
     calculationType: "percentage",
     value: "",
     scope: "whole_bill",
-    conditionType: "default",
+    // No default/fallback condition anymore — every rate line must be
+    // explicitly tied to a payment method or a manual-selection label.
+    conditionType: "payment_method",
     conditionPaymentMethodId: null,
     manualSelectionLabel: null,
     dependsOnChargeCategoryId: null,
@@ -188,11 +190,6 @@ function TaxChargesContent() {
       setFormError("At least one rate line is required");
       return;
     }
-    const defaults = form.rateLines.filter((rl) => rl.conditionType === "default");
-    if (defaults.length > 1) {
-      setFormError("Only one rate line can be set as the default (fallback) line");
-      return;
-    }
     for (const rl of form.rateLines) {
       if (rl.value === "" || Number.isNaN(parseFloat(rl.value))) {
         setFormError("Every rate line needs a numeric value");
@@ -283,6 +280,7 @@ function TaxChargesContent() {
             setForm={setForm}
             paymentMethods={paymentMethods}
             dependencyOptions={dependencyOptions}
+            branchId={branch?.id}
             branchName={branch?.name}
             isEditing={editingId !== "new"}
             saving={saving}
@@ -539,7 +537,7 @@ const TYPE_INFO: Record<ChargeCategoryType, { label: string; hint: string }> = {
 function usesAdvancedFeatures(form: ChargeCategoryPayload): boolean {
   return (
     form.rateLines.length > 1 ||
-    form.rateLines.some((rl) => rl.conditionType !== "default" || !!rl.dependsOnChargeCategoryId) ||
+    form.rateLines.some((rl) => !!rl.dependsOnChargeCategoryId) ||
     !!form.nameSecondaryLanguage ||
     !!form.isRegulatoryReportable ||
     !!form.countsTowardOtherBases
@@ -551,6 +549,7 @@ function ChargeCategoryFormView({
   setForm,
   paymentMethods,
   dependencyOptions,
+  branchId,
   branchName,
   isEditing,
   saving,
@@ -565,6 +564,7 @@ function ChargeCategoryFormView({
   setForm: React.Dispatch<React.SetStateAction<ChargeCategoryPayload>>;
   paymentMethods: PaymentMethod[];
   dependencyOptions: ChargeCategory[];
+  branchId?: string;
   branchName?: string;
   isEditing: boolean;
   saving: boolean;
@@ -580,7 +580,10 @@ function ChargeCategoryFormView({
   const [advancedOpen, setAdvancedOpen] = useState(() => usesAdvancedFeatures(form));
 
   const firstLine = form.rateLines[0];
-  const simpleRateEditable = form.rateLines.length === 1 && firstLine?.conditionType === "default";
+  // There's no default/fallback condition anymore, so "simple" now just
+  // means "a single rate line" — that line's payment-method or manual-
+  // selection condition is edited inline here instead of needing Advanced.
+  const simpleRateEditable = form.rateLines.length === 1;
 
   return (
     <div>
@@ -671,6 +674,63 @@ function ChargeCategoryFormView({
                 <option value="per_product">Each item</option>
               </select>
             </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-500">Applies when</label>
+              <select
+                value={firstLine.conditionType}
+                onChange={(e) =>
+                  onUpdateRateLine(0, {
+                    conditionType: e.target.value as ChargeRateLine["conditionType"],
+                    conditionPaymentMethodId: null,
+                    manualSelectionLabel: null,
+                  })
+                }
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+              >
+                <option value="payment_method">Paying with a specific method</option>
+                <option value="manual_selection">Cashier picks it manually</option>
+              </select>
+            </div>
+
+            {firstLine.conditionType === "payment_method" && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500">
+                  Payment method
+                </label>
+                <select
+                  value={firstLine.conditionPaymentMethodId ?? ""}
+                  onChange={(e) =>
+                    onUpdateRateLine(0, { conditionPaymentMethodId: e.target.value || null })
+                  }
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                >
+                  <option value="">Select payment method…</option>
+                  {paymentMethods.map((pm) => (
+                    <option key={pm.id} value={pm.id}>
+                      {pm.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {firstLine.conditionType === "manual_selection" && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500">
+                  Label the cashier will pick
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Large Box"
+                  value={firstLine.manualSelectionLabel ?? ""}
+                  onChange={(e) =>
+                    onUpdateRateLine(0, { manualSelectionLabel: e.target.value || null })
+                  }
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                />
+              </div>
+            )}
           </>
         )}
 
@@ -679,7 +739,10 @@ function ChargeCategoryFormView({
             type="checkbox"
             checked={!form.branchId}
             onChange={(e) =>
-              setForm((prev) => ({ ...prev, branchId: e.target.checked ? null : prev.branchId }))
+              setForm((prev) => ({
+                ...prev,
+                branchId: e.target.checked ? null : branchId ?? prev.branchId ?? null,
+              }))
             }
             className="h-4 w-4 accent-emerald-600"
           />
@@ -813,10 +876,9 @@ function ChargeCategoryFormView({
                 </button>
               </div>
               <p className="mb-3 text-xs text-slate-400">
-                Optionally mark one rule as the <span className="font-medium">default</span> — it&apos;s
-                used whenever none of the others match. Add more to charge a different rate by
-                payment method, or let the cashier pick from a list. If you don&apos;t set a default,
-                this charge simply won&apos;t apply when nothing else matches.
+                Add more rules to charge a different rate by payment method, or let the cashier
+                pick from a list. Every rule needs a payment method or a manual-selection label —
+                a rule that doesn&apos;t match anything on a given sale simply won&apos;t apply.
               </p>
 
               <div className="space-y-3">
@@ -867,7 +929,6 @@ function ChargeCategoryFormView({
                         }
                         className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-400"
                       >
-                        <option value="default">Default (fallback)</option>
                         <option value="payment_method">By payment method</option>
                         <option value="manual_selection">By manual selection</option>
                       </select>
@@ -994,9 +1055,6 @@ function ChargeCategoryCard({
     const amount =
       rl.calculationType === "percentage" ? `${rl.value}%` : `Rs ${rl.value} flat`;
     const scope = rl.scope === "whole_bill" ? "the whole bill" : "each item";
-    if (rl.conditionType === "default") {
-      return `${amount} on ${scope}`;
-    }
     if (rl.conditionType === "payment_method") {
       const pmName = paymentMethods.find((p) => p.id === rl.conditionPaymentMethodId)?.name ?? "—";
       return `${amount} on ${scope} — only when paying with ${pmName}`;
