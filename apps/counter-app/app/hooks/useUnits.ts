@@ -58,6 +58,12 @@ export function useUnits(activeOnly = false) {
     setUnits((prev) => prev.map((u) => u.id === unitId ? { ...u, isActive: data.unit.isActive } : u));
   }, [token]);
 
+  const deleteUnit = useCallback(async (unitId: string) => {
+    if (!token) throw new Error("Not authenticated");
+    await api.delete<{ success: boolean }>(`/units/${unitId}`, token);
+    setUnits((prev) => prev.filter((u) => u.id !== unitId));
+  }, [token]);
+
   // Helper: get all active weight units for a product's unit type
   const getSameTypeUnits = useCallback((unit: Unit) => {
     return units.filter((u) => u.type === unit.type && u.isActive);
@@ -96,6 +102,7 @@ export function useUnits(activeOnly = false) {
     createUnit,
     updateUnit,
     toggleUnit,
+    deleteUnit,
     getSameTypeUnits,
     convert,
   };

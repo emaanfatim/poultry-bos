@@ -77,7 +77,6 @@ export function Header() {
           {navLink("/till/close", t.nav.till)}
           {canReceiveHandover && navLink("/till/handover", t.nav.handover)}
           {canReceiveHandover && navLink("/till/report", t.till.reportTitle)}
-          {isOwner && navLink("/settings/units", "⚙ Units")}
         </nav>
 
         <div className="flex items-center gap-3">

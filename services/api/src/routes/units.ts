@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { units } from "@repo/database";
+import { units, products, productUnits } from "@repo/database";
 import { getDb } from "../db";
 import { authMiddleware, requireOwner } from "../middleware/auth";
 import type { AppVariables } from "../types";
@@ -183,4 +183,72 @@ unitsRoutes.patch("/:id/toggle", requireOwner, async (c) => {
     .returning();
 
   return c.json({ unit: updated });
+});
+
+// DELETE /units/:id — owner permanently removes a unit that's unused
+unitsRoutes.delete("/:id", requireOwner, async (c) => {
+  const tenantId = c.get("tenantId");
+  const unitId = c.req.param("id");
+  if (!unitId) {
+    return c.json({ error: "Missing id" }, 400);
+  }
+  const db = getDb();
+
+  const [existing] = await db
+    .select()
+    .from(units)
+    .where(and(eq(units.id, unitId), eq(units.tenantId, tenantId)))
+    .limit(1);
+
+  if (!existing) {
+    return c.json({ error: "Unit not found" }, 404);
+  }
+
+  // Block deletion when other units convert into this one
+  const dependents = await db
+    .select({ id: units.id })
+    .from(units)
+    .where(and(eq(units.baseUnitId, unitId), eq(units.tenantId, tenantId)))
+    .limit(1);
+
+  if (dependents.length > 0) {
+    return c.json(
+      { error: "Cannot delete — other units convert into this one. Reassign or delete those first." },
+      400,
+    );
+  }
+
+  // Block deletion when a product is priced in this unit
+  const priceUses = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(and(eq(products.unitId, unitId), eq(products.tenantId, tenantId)))
+    .limit(1);
+
+  if (priceUses.length > 0) {
+    return c.json(
+      { error: "Cannot delete — at least one product is priced in this unit." },
+      400,
+    );
+  }
+
+  // Block deletion when a product allows selling in this unit
+  const sellUses = await db
+    .select({ id: productUnits.id })
+    .from(productUnits)
+    .where(and(eq(productUnits.unitId, unitId), eq(productUnits.tenantId, tenantId)))
+    .limit(1);
+
+  if (sellUses.length > 0) {
+    return c.json(
+      { error: "Cannot delete — at least one product allows selling in this unit." },
+      400,
+    );
+  }
+
+  await db
+    .delete(units)
+    .where(and(eq(units.id, unitId), eq(units.tenantId, tenantId)));
+
+  return c.json({ success: true });
 });

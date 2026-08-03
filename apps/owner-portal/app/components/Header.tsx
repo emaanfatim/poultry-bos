@@ -43,6 +43,7 @@ export function Header() {
         <nav className="flex flex-wrap items-center gap-1">
           {navLink("/dashboard/categories", "Categories")}
           {navLink("/dashboard/products", "Products")}
+          {navLink("/dashboard/units", "Units")}
           {navLink("/dashboard/tax-charges", "Tax & Charges")}
           {navLink("/dashboard/staff/discounts", "Staff · Discounts")}
           {navLink("/dashboard/staff/till", "Staff · Till")}
