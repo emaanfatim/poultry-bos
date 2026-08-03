@@ -101,6 +101,172 @@ productRoutes.get("/", async (c) => {
   });
 });
 
+// ─── Create / edit products ─────────────────────────────────────────────────
+
+// A data URL keeps this working with zero extra infrastructure (no bucket,
+// no credentials) — fine for a modest product catalogue. Capped well under
+// Postgres's practical limits; the frontend compresses images before this
+// point so real payloads are far smaller than the cap.
+const imageKeySchema = z
+  .string()
+  .regex(/^data:image\/(png|jpeg|jpg|webp);base64,/, "Invalid image format")
+  .max(2_000_000, "Image is too large");
+
+const createProductSchema = z.object({
+  subCategoryId: z.string().uuid("Choose a sub-category"),
+  name: z.string().min(1, "Name is required"),
+  token: z.string().min(1, "Token is required"),
+  unitId: z.string().uuid("Choose a unit"),
+  currentPrice: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid price"),
+  isServiceItem: z.boolean().optional().default(false),
+  // Extra units this product can also be sold in, besides its priced unit.
+  sellableUnitIds: z.array(z.string().uuid()).optional().default([]),
+  imageKey: imageKeySchema.optional().nullable(),
+});
+
+// POST /api/products — owner adds a new product to the catalogue
+productRoutes.post("/", requireOwner, async (c) => {
+  const tenantId = c.get("tenantId");
+  const body = await c.req.json();
+  const parsed = createProductSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.issues[0]?.message ?? "Invalid product data" }, 400);
+  }
+
+  const db = getDb();
+
+  // Sub-category must belong to this tenant
+  const [subCategory] = await db
+    .select()
+    .from(productSubCategories)
+    .where(
+      and(
+        eq(productSubCategories.id, parsed.data.subCategoryId),
+        eq(productSubCategories.tenantId, tenantId),
+      ),
+    )
+    .limit(1);
+
+  if (!subCategory) {
+    return c.json({ error: "Sub-category not found" }, 404);
+  }
+
+  // Priced unit must belong to this tenant
+  const [priceUnit] = await db
+    .select()
+    .from(units)
+    .where(and(eq(units.id, parsed.data.unitId), eq(units.tenantId, tenantId)))
+    .limit(1);
+
+  if (!priceUnit) {
+    return c.json({ error: "Unit not found" }, 404);
+  }
+
+  // Any extra sellable units must exist for this tenant and convert with the priced unit
+  const extraUnitIds = parsed.data.sellableUnitIds.filter((id) => id !== priceUnit.id);
+  let extraUnits: (typeof priceUnit)[] = [];
+  if (extraUnitIds.length) {
+    extraUnits = await db
+      .select()
+      .from(units)
+      .where(and(eq(units.tenantId, tenantId), inArray(units.id, extraUnitIds)));
+
+    if (extraUnits.length !== extraUnitIds.length) {
+      return c.json({ error: "One or more sellable units not found" }, 400);
+    }
+    const mismatched = extraUnits.find((u) => !sameFamily(u, priceUnit));
+    if (mismatched) {
+      return c.json(
+        { error: `"${mismatched.name}" doesn't convert with the priced unit "${priceUnit.name}"` },
+        400,
+      );
+    }
+  }
+
+  let created;
+  try {
+    [created] = await db
+      .insert(products)
+      .values({
+        tenantId,
+        subCategoryId: parsed.data.subCategoryId,
+        name: parsed.data.name,
+        token: parsed.data.token,
+        unitId: parsed.data.unitId,
+        currentPrice: parsed.data.currentPrice,
+        isServiceItem: parsed.data.isServiceItem,
+        imageKey: parsed.data.imageKey ?? null,
+        status: "active",
+      })
+      .returning();
+  } catch {
+    return c.json({ error: "A product with this token already exists" }, 409);
+  }
+
+  if (!created) {
+    return c.json({ error: "Failed to create product" }, 500);
+  }
+
+  const allSellableIds = Array.from(new Set([priceUnit.id, ...extraUnitIds]));
+  await db
+    .insert(productUnits)
+    .values(allSellableIds.map((unitId) => ({ tenantId, productId: created.id, unitId })));
+
+  return c.json({ product: created }, 201);
+});
+
+const updateProductSchema = z.object({
+  name: z.string().min(1).optional(),
+  token: z.string().min(1).optional(),
+  subCategoryId: z.string().uuid().optional(),
+  status: z.enum(["active", "inactive"]).optional(),
+  imageKey: imageKeySchema.nullable().optional(),
+});
+
+// PATCH /api/products/:id — owner edits a product's name / token / sub-category / status
+productRoutes.patch("/:id", requireOwner, async (c) => {
+  const tenantId = c.get("tenantId");
+  const productId = c.req.param("id");
+  if (!productId) return c.json({ error: "Missing id" }, 400);
+
+  const body = await c.req.json();
+  const parsed = updateProductSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.issues[0]?.message ?? "Invalid product data" }, 400);
+  }
+
+  const db = getDb();
+
+  if (parsed.data.subCategoryId) {
+    const [subCategory] = await db
+      .select()
+      .from(productSubCategories)
+      .where(
+        and(
+          eq(productSubCategories.id, parsed.data.subCategoryId),
+          eq(productSubCategories.tenantId, tenantId),
+        ),
+      )
+      .limit(1);
+    if (!subCategory) return c.json({ error: "Sub-category not found" }, 404);
+  }
+
+  let updated;
+  try {
+    [updated] = await db
+      .update(products)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(and(eq(products.id, productId), eq(products.tenantId, tenantId)))
+      .returning();
+  } catch {
+    return c.json({ error: "A product with this token already exists" }, 409);
+  }
+
+  if (!updated) return c.json({ error: "Product not found" }, 404);
+  return c.json({ product: updated });
+});
+
 // PUT /api/products/:id/units — owner configures which units this product can be
 // sold in (must all share the same type + base unit as the product's priced unit).
 const setSellableUnitsSchema = z.object({
