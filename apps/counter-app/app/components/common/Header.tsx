@@ -67,6 +67,17 @@ export function Header() {
                 {formatCurrency(tillSession.currentCash ?? tillSession.openingCash, symbol)}
               </span>
             </div>
+            {tillSession.cashSalesToday !== undefined && (
+              <>
+                <span className="text-slate-300">|</span>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-slate-400">{t.till.headerSalesToday}</span>
+                  <span className="font-semibold text-slate-700">
+                    {formatCurrency(tillSession.cashSalesToday, symbol)}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         )}
 

@@ -139,6 +139,7 @@ export const ur: TranslationKeys = {
     openTitle: "اپنا ٹِل کھولیں",
     headerStartTill: "ابتدائی ٹِل",
     headerCurrentTill: "موجودہ ٹِل",
+    headerSalesToday: "آج کی فروخت",
     openSubtitle: "فروخت شروع کرنے سے پہلے اپنی ابتدائی رقم گنیں اور درج کریں۔",
     closeTitle: "اپنا ٹِل بند کریں",
     closeSubtitle: "اپنی شفٹ ختم کرنے کے لیے اختتامی رقم گنیں اور درج کریں۔",

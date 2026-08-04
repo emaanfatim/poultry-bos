@@ -431,6 +431,11 @@ export interface TillSession {
   // GET /till/current; absent on closed sessions (use actualClosingCash /
   // expectedClosingCash there instead).
   currentCash?: string;
+  // Cash sales made so far this shift, before the opening float is added
+  // in — i.e. just the `net` half of currentCash. Only populated by
+  // GET /till/current, shown alongside currentCash so cashiers see "how
+  // much I've sold" without confusing it for "what's in the drawer".
+  cashSalesToday?: string;
   expectedClosingCash?: string | null;
   actualClosingCash?: string | null;
   variance?: string | null;

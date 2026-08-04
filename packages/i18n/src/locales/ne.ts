@@ -142,6 +142,7 @@ export const ne: TranslationKeys = {
     openTitle: "Open Your Till / اپنا ٹِل کھولیں",
     headerStartTill: "Start Till / ابتدائی ٹِل",
     headerCurrentTill: "Current Till / موجودہ ٹِل",
+    headerSalesToday: "Sales Today / آج کی فروخت",
     openSubtitle:
       "Count and enter your starting cash before selling. / فروخت شروع کرنے سے پہلے ابتدائی رقم گنیں۔",
     closeTitle: "Close Your Till / اپنا ٹِل بند کریں",

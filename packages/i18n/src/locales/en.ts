@@ -140,6 +140,7 @@ export const en: TranslationKeys = {
     openSubtitle: "Count and enter your starting cash before you can begin selling.",
     headerStartTill: "Start Till",
     headerCurrentTill: "Current Till",
+    headerSalesToday: "Sales Today",
     closeTitle: "Close Your Till",
     closeSubtitle: "Count and enter your ending cash to close out your shift.",
     openingCash: "Opening Cash",

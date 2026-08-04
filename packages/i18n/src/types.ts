@@ -146,6 +146,7 @@ export interface TranslationKeys {
     openSubtitle: string;
     headerStartTill: string;
     headerCurrentTill: string;
+    headerSalesToday: string;
     closeTitle: string;
     closeSubtitle: string;
     openingCash: string;
