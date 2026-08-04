@@ -858,6 +858,22 @@ salesRoutes.get("/daily-summary", async (c) => {
     0,
   );
 
+  // Priced vs. unpriced (delivery-note) split — priced bills are real cash/
+  // card sales rung up at the counter; unpriced ones are invoiced later and
+  // never touch the till. "Miscellaneous" bills are a distinct third type
+  // (special-permission bills, e.g. staff meals) and are intentionally left
+  // out of this two-bucket breakdown rather than folded into "priced".
+  const billTypeBreakdown = {
+    priced: { count: 0, revenue: 0 },
+    unpriced: { count: 0, revenue: 0 },
+  };
+  for (const sale of todaySales as Array<{ billType: string; total: string }>) {
+    if (sale.billType !== "priced" && sale.billType !== "unpriced") continue;
+    const bucket = billTypeBreakdown[sale.billType];
+    bucket.count += 1;
+    bucket.revenue += parseFloat(sale.total);
+  }
+
   const breakdown = await db
     .select({
       productId: transactionLineItems.productId,
@@ -930,6 +946,16 @@ salesRoutes.get("/daily-summary", async (c) => {
       totalRevenue: roundMoney(totalRevenue),
       transactionCount: todaySales.length,
       avgOrderValue: todaySales.length > 0 ? roundMoney(totalRevenue / todaySales.length) : "0.00",
+      billTypeBreakdown: {
+        priced: {
+          count: billTypeBreakdown.priced.count,
+          revenue: roundMoney(billTypeBreakdown.priced.revenue),
+        },
+        unpriced: {
+          count: billTypeBreakdown.unpriced.count,
+          revenue: roundMoney(billTypeBreakdown.unpriced.revenue),
+        },
+      },
       productBreakdown: breakdown.map((row: {
         productId: string;
         productName: string;

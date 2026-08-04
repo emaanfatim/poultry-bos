@@ -41,6 +41,7 @@ export function Header() {
         </div>
 
         <nav className="flex flex-wrap items-center gap-1">
+          {navLink("/dashboard/summary", "Summary")}
           {navLink("/dashboard/categories", "Categories")}
           {navLink("/dashboard/products", "Products")}
           {navLink("/dashboard/modifier-groups", "Modifier Groups")}
