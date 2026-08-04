@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { DailySummary } from "@repo/types";
+import { Eye, X } from "lucide-react";
+import type { DailySummary, Transaction } from "@repo/types";
 import { AuthGuard } from "../../components/AuthGuard";
 import { Header } from "../../components/Header";
+import { ReceiptPreview } from "../../components/sales/ReceiptPreview";
 import { useAuth } from "../../providers/AuthProvider";
-import { fetchDailySummary, formatCurrency } from "../../services/sales";
+import { fetchDailySummary, fetchTransaction, formatCurrency } from "../../services/sales";
 
 // ─── Small inline icons (avoids pulling in a new icon dependency) ─────────
 function ChartIcon() {
@@ -165,6 +167,31 @@ export default function OwnerSummaryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const symbol = tenant?.currencySymbol ?? "Rs";
+
+  // Receipt-view modal — reuses the same ReceiptPreview shown at checkout so
+  // an owner can inspect exactly what was printed for a past sale.
+  const [viewingReceiptId, setViewingReceiptId] = useState<string | null>(null);
+  const [viewedTransaction, setViewedTransaction] = useState<Transaction | null>(null);
+  const [isLoadingReceipt, setIsLoadingReceipt] = useState(false);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
+
+  const openReceipt = (id: string) => {
+    if (!token) return;
+    setViewingReceiptId(id);
+    setViewedTransaction(null);
+    setReceiptError(null);
+    setIsLoadingReceipt(true);
+    fetchTransaction(token, id)
+      .then(setViewedTransaction)
+      .catch((err) => setReceiptError(err instanceof Error ? err.message : "Something went wrong"))
+      .finally(() => setIsLoadingReceipt(false));
+  };
+
+  const closeReceipt = () => {
+    setViewingReceiptId(null);
+    setViewedTransaction(null);
+    setReceiptError(null);
+  };
 
   const load = () => {
     if (!token) return;
@@ -337,8 +364,12 @@ export default function OwnerSummaryPage() {
                       <th className="px-4 py-3 text-start font-medium">Receipt #</th>
                       <th className="px-4 py-3 text-start font-medium">Bill Type</th>
                       <th className="px-4 py-3 text-start font-medium">Customer</th>
+                      <th className="px-4 py-3 text-start font-medium">Modifiers</th>
+                      <th className="px-4 py-3 text-end font-medium">Discount</th>
+                      <th className="px-4 py-3 text-end font-medium">Rounding</th>
                       <th className="px-4 py-3 text-end font-medium">Total</th>
                       <th className="px-4 py-3 text-end font-medium">Date &amp; Time</th>
+                      <th className="px-4 py-3 text-center font-medium">View Receipt</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -377,6 +408,56 @@ export default function OwnerSummaryPage() {
                               <span className="text-slate-300">—</span>
                             )}
                           </td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {tx.modifiers && tx.modifiers.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {tx.modifiers.map((mod, idx) => (
+                                  <span
+                                    key={`${tx.id}-mod-${idx}`}
+                                    className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
+                                  >
+                                    {mod.label}
+                                    {mod.quantity > 1 ? ` ×${mod.quantity}` : ""}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-slate-300">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-end">
+                            {tx.discountAmount && parseFloat(tx.discountAmount) > 0 ? (
+                              <span className="font-medium text-rose-600">
+                                - {formatCurrency(tx.discountAmount, symbol)}
+                                {tx.discountType === "percentage" && parseFloat(tx.subtotal) > 0
+                                  ? (() => {
+                                      const rate =
+                                        (parseFloat(tx.discountAmount) / parseFloat(tx.subtotal)) *
+                                        100;
+                                      const rateLabel = Number.isInteger(rate)
+                                        ? rate.toString()
+                                        : rate.toFixed(2);
+                                      return ` (${rateLabel}%)`;
+                                    })()
+                                  : ""}
+                              </span>
+                            ) : (
+                              <span className="text-slate-300">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-end">
+                            {tx.roundingAdjustment && parseFloat(tx.roundingAdjustment) !== 0 ? (
+                              <span className="font-medium text-slate-500">
+                                {parseFloat(tx.roundingAdjustment) > 0 ? "+ " : "- "}
+                                {formatCurrency(
+                                  Math.abs(parseFloat(tx.roundingAdjustment)).toFixed(2),
+                                  symbol,
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-slate-300">—</span>
+                            )}
+                          </td>
                           <td className="px-4 py-3 text-end font-semibold text-slate-900">
                             {formatCurrency(tx.total, symbol)}
                           </td>
@@ -385,6 +466,17 @@ export default function OwnerSummaryPage() {
                               dateStyle: "medium",
                               timeStyle: "short",
                             })}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => openReceipt(tx.id)}
+                              title="View Receipt"
+                              aria-label="View Receipt"
+                              className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-emerald-700"
+                            >
+                              <Eye size={18} />
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -395,6 +487,36 @@ export default function OwnerSummaryPage() {
           </>
         )}
       </main>
+
+      {viewingReceiptId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 print:bg-transparent">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-xl print:max-h-none print:overflow-visible print:shadow-none">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 print:hidden">
+              <h3 className="font-semibold text-slate-900">View Receipt</h3>
+              <button
+                type="button"
+                onClick={closeReceipt}
+                aria-label="Close"
+                className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-4">
+              {isLoadingReceipt && <p className="text-center text-slate-500">Loading...</p>}
+              {receiptError && <p className="text-center text-red-600">{receiptError}</p>}
+              {viewedTransaction && (
+                <ReceiptPreview
+                  transaction={viewedTransaction}
+                  onPrint={() => window.print()}
+                  onClose={closeReceipt}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </AuthGuard>
   );
 }
