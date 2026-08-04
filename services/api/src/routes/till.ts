@@ -143,7 +143,7 @@ async function computeCashInDrawer(
   openedAt: Date,
   asOf: Date,
   openingCash: number,
-): Promise<number> {
+): Promise<{ currentCash: number; cashSalesToday: number }> {
   const db = getDb();
 
   const rows = await db
@@ -171,7 +171,7 @@ async function computeCashInDrawer(
     if (row.status === "refunded") net -= amount;
   }
 
-  return openingCash + net;
+  return { currentCash: openingCash + net, cashSalesToday: net };
 }
 
 export interface RoundingSummary {
@@ -293,7 +293,7 @@ tillRoutes.get("/current", async (c) => {
 
   const counts = await attachCounts(tenantId, session.id);
   const asOf = new Date();
-  const currentCash = await computeCashInDrawer(
+  const { currentCash, cashSalesToday } = await computeCashInDrawer(
     tenantId,
     session.branchId,
     session.userId,
@@ -313,6 +313,7 @@ tillRoutes.get("/current", async (c) => {
     session: {
       ...formatSession(session, user.displayName, counts),
       currentCash: roundMoney(currentCash),
+      cashSalesToday: roundMoney(cashSalesToday),
       roundingSummary,
     },
   });
@@ -434,7 +435,7 @@ tillRoutes.post("/close", async (c) => {
   }
 
   const closedAt = new Date();
-  const expected = await computeCashInDrawer(
+  const { currentCash: expected } = await computeCashInDrawer(
     tenantId,
     branchId,
     user.id,
