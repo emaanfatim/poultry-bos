@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import type { Product, Unit } from "@repo/types";
+import type { Product, SelectedModifier, Unit } from "@repo/types";
 import { useI18n } from "../../providers/I18nProvider";
 import { ProductCard } from "./ProductCard";
 
 interface ProductGridProps {
   products: Product[];
-  onAdd: (product: Product, quantity: number, unit: Unit) => void;
+  onAdd: (
+    product: Product,
+    quantity: number,
+    unit: Unit,
+    modifiers?: SelectedModifier[],
+    kitchenNote?: string,
+  ) => void;
 }
 
 // ─── Group products by category → subcategory ────────────────────────────────

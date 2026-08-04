@@ -16,6 +16,21 @@ const draftItemSchema = z.object({
   quantity: z.number().positive(),
   rate: z.string(),
   unit: z.string(),
+  // Product-catalogue handover §3.1 — carried through so resuming a draft
+  // doesn't lose a customer's Size/Milk/Shots picks or prep note.
+  kitchenNote: z.string().max(500).optional(),
+  modifiers: z
+    .array(
+      z.object({
+        modifierGroupId: z.string().uuid(),
+        modifierOptionId: z.string().uuid(),
+        label: z.string(),
+        quantity: z.number().int().min(1),
+        unitCharge: z.string(),
+        totalCharge: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 const createDraftSchema = z.object({

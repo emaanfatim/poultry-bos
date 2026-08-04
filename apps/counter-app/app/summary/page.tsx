@@ -218,6 +218,7 @@ export default function SummaryPage() {
                         <th className="px-4 py-3 text-start font-medium">Receipt #</th>
                         <th className="px-4 py-3 text-start font-medium">Bill Type</th>
                         <th className="px-4 py-3 text-start font-medium">Customer</th>
+                        <th className="px-4 py-3 text-start font-medium">{t.summary.modifierBreakdown}</th>
                         <th className="px-4 py-3 text-end font-medium">{t.receipt.discount}</th>
                         <th className="px-4 py-3 text-end font-medium">{t.receipt.rounding}</th>
                         <th className="px-4 py-3 text-end font-medium">Total</th>
@@ -258,6 +259,23 @@ export default function SummaryPage() {
                                     </span>
                                   )}
                                 </>
+                              ) : (
+                                <span className="text-slate-300">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-slate-600">
+                              {tx.modifiers && tx.modifiers.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {tx.modifiers.map((mod, idx) => (
+                                    <span
+                                      key={`${tx.id}-mod-${idx}`}
+                                      className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
+                                    >
+                                      {mod.label}
+                                      {mod.quantity > 1 ? ` ×${mod.quantity}` : ""}
+                                    </span>
+                                  ))}
+                                </div>
                               ) : (
                                 <span className="text-slate-300">—</span>
                               )}

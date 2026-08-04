@@ -8,9 +8,10 @@ import { CartSummary } from "./CartSummary";
 interface CartProps {
   items: CartLineItem[];
   subtotal: string;
-  onUpdateQuantity: (productId: string, quantity: number) => void;
-  onChangeUnit: (productId: string, unit: CartLineItem["unit"]) => void;
-  onRemove: (productId: string) => void;
+  onUpdateQuantity: (cartItemId: string, quantity: number) => void;
+  onChangeUnit: (cartItemId: string, unit: CartLineItem["unit"]) => void;
+  onUpdateKitchenNote: (cartItemId: string, note: string) => void;
+  onRemove: (cartItemId: string) => void;
   onCheckout: () => void;
   onSaveDraft?: () => void;
 }
@@ -20,6 +21,7 @@ export function Cart({
   subtotal,
   onUpdateQuantity,
   onChangeUnit,
+  onUpdateKitchenNote,
   onRemove,
   onCheckout,
   onSaveDraft,
@@ -52,21 +54,18 @@ export function Cart({
         ) : (
           items.map((item) => (
             <CartItem
-              key={item.productId}
+              key={item.cartItemId}
               item={item}
               onUpdateQuantity={onUpdateQuantity}
               onChangeUnit={onChangeUnit}
+              onUpdateKitchenNote={onUpdateKitchenNote}
               onRemove={onRemove}
             />
           ))
         )}
       </div>
 
-      <CartSummary
-        subtotal={subtotal}
-        onCheckout={onCheckout}
-        disabled={items.length === 0}
-      />
+      <CartSummary subtotal={subtotal} onCheckout={onCheckout} disabled={items.length === 0} />
     </div>
   );
 }

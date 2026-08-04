@@ -1,4 +1,4 @@
-import type { Product } from "@repo/types";
+import type { Product, ProductModifierGroup } from "@repo/types";
 import { api } from "./api";
 
 export async function fetchProducts(token: string): Promise<Product[]> {
@@ -68,4 +68,29 @@ export async function setProductUnits(
   unitIds: string[],
 ): Promise<{ success: boolean; unitIds: string[] }> {
   return api.put(`/products/${productId}/units`, { unitIds }, token);
+}
+
+/** GET /products/:id/modifier-groups — groups currently attached to this product. */
+export async function fetchProductModifierGroups(
+  token: string,
+  productId: string,
+): Promise<ProductModifierGroup[]> {
+  const data = await api.get<{ modifierGroups: ProductModifierGroup[] }>(
+    `/products/${productId}/modifier-groups`,
+    token,
+  );
+  return data.modifierGroups;
+}
+
+/**
+ * PUT /products/:id/modifier-groups — replace the full set of groups
+ * attached to this product. Sending an empty array switches the product
+ * back to "Simple" style (no customisation options at the counter).
+ */
+export async function setProductModifierGroups(
+  token: string,
+  productId: string,
+  modifierGroups: Array<{ modifierGroupId: string; sortOrder: number }>,
+): Promise<void> {
+  await api.put(`/products/${productId}/modifier-groups`, { modifierGroups }, token);
 }

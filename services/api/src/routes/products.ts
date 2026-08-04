@@ -2,7 +2,10 @@ import { Hono } from "hono";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import {
+  modifierGroups,
+  modifierOptions,
   productCategories,
+  productModifierGroups,
   productSubCategories,
   productUnits,
   products,
@@ -11,6 +14,7 @@ import {
 import { getDb } from "../db";
 import { authMiddleware, requireOwner } from "../middleware/auth";
 import { sameFamily } from "../lib/units";
+import { syncLinkedGroupOptions } from "./modifier-groups";
 import type { AppVariables } from "../types";
 
 export const productRoutes = new Hono<{ Variables: AppVariables }>();
@@ -59,6 +63,31 @@ productRoutes.get("/", async (c) => {
         )
     : [];
 
+  // Catalogue style (§2 of the handover) — a product "uses Modifiers" simply
+  // by having at least one active modifier group attached; there's no
+  // separate style flag to keep in sync, so this stays derived rather than
+  // stored.
+  const attachedGroupRows = productIds.length
+    ? await db
+        .select({
+          productId: productModifierGroups.productId,
+          isActive: modifierGroups.isActive,
+        })
+        .from(productModifierGroups)
+        .innerJoin(modifierGroups, eq(productModifierGroups.modifierGroupId, modifierGroups.id))
+        .where(
+          and(
+            eq(productModifierGroups.tenantId, tenantId),
+            inArray(productModifierGroups.productId, productIds),
+          ),
+        )
+    : [];
+  const modifierCountByProduct = new Map<string, number>();
+  for (const row of attachedGroupRows) {
+    if (!row.isActive) continue;
+    modifierCountByProduct.set(row.productId, (modifierCountByProduct.get(row.productId) ?? 0) + 1);
+  }
+
   const toUnitDto = (u: (typeof allUnits)[number]) => ({
     id: u.id,
     name: u.name,
@@ -81,6 +110,7 @@ productRoutes.get("/", async (c) => {
       status: row.status,
       categoryName: row.categoryName,
       subCategoryName: row.subCategoryName,
+      hasModifiers: (modifierCountByProduct.get(row.id) ?? 0) > 0,
       unit: {
         id: row.unitId,
         name: row.unitName,
@@ -387,4 +417,135 @@ productRoutes.put("/:id/price", requireOwner, async (c) => {
 
   if (!updated) return c.json({ error: "Product not found" }, 404);
   return c.json({ product: updated });
+});
+
+// ─── Product catalogue style: attaching Modifier Groups (handover §2/§3) ───
+// A product stays "Simple" until at least one group is attached here; there
+// is nothing else to flip — attaching/detaching groups IS the style switch.
+
+// GET /products/:id/modifier-groups — groups currently attached to this
+// product, each with its live-resolved options. Used both by the Owner
+// Portal's product edit screen AND the Counter App's POS (a cashier needs
+// to see a product's Size/Milk/Shots choices to sell it at all), so this
+// stays read-only-for-any-authenticated-user rather than owner-gated.
+// Only the PUT below (which changes what's attached) is owner-only.
+productRoutes.get("/:id/modifier-groups", async (c) => {
+  const tenantId = c.get("tenantId");
+  const productId = c.req.param("id");
+  if (!productId) return c.json({ error: "Missing id" }, 400);
+  const db = getDb();
+
+  const [product] = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(and(eq(products.id, productId), eq(products.tenantId, tenantId)))
+    .limit(1);
+  if (!product) return c.json({ error: "Product not found" }, 404);
+
+  const attachments = await db
+    .select()
+    .from(productModifierGroups)
+    .where(and(eq(productModifierGroups.tenantId, tenantId), eq(productModifierGroups.productId, productId)))
+    .orderBy(productModifierGroups.sortOrder);
+
+  const groupIds = attachments.map((a) => a.modifierGroupId);
+  const groups = groupIds.length
+    ? await db.select().from(modifierGroups).where(inArray(modifierGroups.id, groupIds))
+    : [];
+
+  // Keep any Linked Group (e.g. Packaging) in step with its sub-category
+  // before returning options — otherwise a cashier at POS could see a
+  // price that's already drifted from the real catalogue.
+  for (const group of groups) {
+    if (group.linkedToSubCategoryId) {
+      await syncLinkedGroupOptions(db, tenantId, group.id, group.linkedToSubCategoryId);
+    }
+  }
+
+  const options = groupIds.length
+    ? await db
+        .select()
+        .from(modifierOptions)
+        .where(inArray(modifierOptions.modifierGroupId, groupIds))
+        .orderBy(modifierOptions.sortOrder)
+    : [];
+  const groupById = new Map(groups.map((g) => [g.id, g]));
+
+  return c.json({
+    modifierGroups: attachments
+      .map((a) => {
+        const group = groupById.get(a.modifierGroupId);
+        if (!group) return null;
+        return {
+          ...group,
+          isRequired: a.isRequiredOverride ?? group.isRequired,
+          sortOrder: a.sortOrder,
+          options: options.filter((o) => o.modifierGroupId === group.id),
+        };
+      })
+      .filter((g): g is NonNullable<typeof g> => g !== null),
+  });
+});
+
+const setProductModifierGroupsSchema = z.object({
+  modifierGroups: z.array(
+    z.object({
+      modifierGroupId: z.string().uuid(),
+      isRequiredOverride: z.boolean().nullable().optional(),
+      sortOrder: z.number().int().optional().default(0),
+    }),
+  ),
+});
+
+// PUT /products/:id/modifier-groups — replace the full set of groups
+// attached to this product. Sending an empty array switches the product
+// back to "Simple" style.
+productRoutes.put("/:id/modifier-groups", requireOwner, async (c) => {
+  const tenantId = c.get("tenantId");
+  const productId = c.req.param("id");
+  if (!productId) return c.json({ error: "Missing id" }, 400);
+  const body = await c.req.json();
+  const parsed = setProductModifierGroupsSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.issues[0]?.message ?? "Invalid data" }, 400);
+  }
+
+  const db = getDb();
+
+  const [product] = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(and(eq(products.id, productId), eq(products.tenantId, tenantId)))
+    .limit(1);
+  if (!product) return c.json({ error: "Product not found" }, 404);
+
+  const groupIds = parsed.data.modifierGroups.map((g) => g.modifierGroupId);
+  if (groupIds.length) {
+    const found = await db
+      .select({ id: modifierGroups.id })
+      .from(modifierGroups)
+      .where(and(eq(modifierGroups.tenantId, tenantId), inArray(modifierGroups.id, groupIds)));
+    if (found.length !== new Set(groupIds).size) {
+      return c.json({ error: "One or more modifier groups not found" }, 404);
+    }
+  }
+
+  await db
+    .delete(productModifierGroups)
+    .where(and(eq(productModifierGroups.tenantId, tenantId), eq(productModifierGroups.productId, productId)));
+
+  if (groupIds.length) {
+    await db.insert(productModifierGroups).values(
+      parsed.data.modifierGroups.map((g, i) => ({
+        tenantId,
+        productId,
+        modifierGroupId: g.modifierGroupId,
+        isRequiredOverride: g.isRequiredOverride ?? null,
+        sortOrder: g.sortOrder ?? i,
+      })),
+    );
+  }
+
+  return c.json({ success: true, modifierGroupIds: groupIds });
 });

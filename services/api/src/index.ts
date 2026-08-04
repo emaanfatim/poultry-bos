@@ -18,6 +18,7 @@ import { chargeResolutionRoutes } from "./routes/charge-resolution.js";
 import { paymentMethodRoutes } from "./routes/payment-methods.js";
 import { discountSettingsRoutes } from "./routes/discount-settings.js";
 import { tillSettingsRoutes } from "./routes/till-settings.js";
+import { modifierGroupRoutes } from "./routes/modifier-groups.js";
 
 
 dotenv.config({
@@ -61,6 +62,7 @@ app.route("/charge-resolution", chargeResolutionRoutes);
 app.route("/payment-methods", paymentMethodRoutes);
 app.route("/discount-settings", discountSettingsRoutes);
 app.route("/till-settings", tillSettingsRoutes);
+app.route("/modifier-groups", modifierGroupRoutes);
 
 const port = Number(process.env.PORT ?? 4000);
 

@@ -1,12 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Product, Unit } from "@repo/types";
+import type { ModifierGroup, Product, Unit } from "@repo/types";
 import { useAuth } from "../../providers/AuthProvider";
 import { AuthGuard } from "../../components/AuthGuard";
 import { Header } from "../../components/Header";
-import { fetchProducts, createProduct, updateProduct, setProductPrice, setProductUnits } from "../../services/products";
+import {
+  fetchProducts,
+  createProduct,
+  updateProduct,
+  setProductPrice,
+  setProductUnits,
+  fetchProductModifierGroups,
+  setProductModifierGroups,
+} from "../../services/products";
 import { fetchProductCategories } from "../../services/productCategories";
+import { fetchModifierGroups } from "../../services/modifierGroups";
 import { fetchUnits } from "../../services/units";
 import { ApiError } from "../../services/api";
 import { fileToProductImage, ImageProcessingError } from "../../lib/image";
@@ -56,6 +65,7 @@ function ProductsPageContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategoryLite[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
+  const [modifierLibrary, setModifierLibrary] = useState<ModifierGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -77,19 +87,26 @@ function ProductsPageContent() {
   const [unitsEdits, setUnitsEdits] = useState<Record<string, string[]>>({});
   const [unitsSavingId, setUnitsSavingId] = useState<string | null>(null);
 
+  // Inline "editing attached modifier groups" state, keyed by product id
+  const [modifierEdits, setModifierEdits] = useState<Record<string, string[]>>({});
+  const [modifierEditLoadingId, setModifierEditLoadingId] = useState<string | null>(null);
+  const [modifierSavingId, setModifierSavingId] = useState<string | null>(null);
+
   async function load() {
     if (!token) return;
     setLoading(true);
     setError("");
     try {
-      const [productsData, categoriesData, unitsData] = await Promise.all([
+      const [productsData, categoriesData, unitsData, modifierGroupsData] = await Promise.all([
         fetchProducts(token),
         fetchProductCategories(token),
         fetchUnits(token),
+        fetchModifierGroups(token),
       ]);
       setProducts(productsData);
       setCategories(categoriesData);
       setUnits(unitsData);
+      setModifierLibrary(modifierGroupsData);
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : "Failed to load products");
     } finally {
@@ -318,6 +335,65 @@ function ProductsPageContent() {
       setError(e instanceof ApiError ? e.message : "Failed to update sellable units");
     } finally {
       setUnitsSavingId(null);
+    }
+  }
+
+  // ─── Catalogue style: attach / detach Modifier Groups ───────────────────
+  // This IS the "Simple vs Modifiers" switch — a product with zero groups
+  // attached is Simple; attaching any group makes it a Modifiers-style
+  // product, exactly like Coffee in the handover doc.
+
+  async function startEditModifiers(product: Product) {
+    if (!token) return;
+    setModifierEditLoadingId(product.id);
+    setError("");
+    try {
+      const attached = await fetchProductModifierGroups(token, product.id);
+      setModifierEdits((prev) => ({ ...prev, [product.id]: attached.map((g) => g.id) }));
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : "Failed to load attached modifier groups");
+    } finally {
+      setModifierEditLoadingId(null);
+    }
+  }
+
+  function cancelEditModifiers(productId: string) {
+    setModifierEdits((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+  }
+
+  function toggleEditModifierGroup(productId: string, groupId: string) {
+    setModifierEdits((prev) => {
+      const current = prev[productId] ?? [];
+      return {
+        ...prev,
+        [productId]: current.includes(groupId)
+          ? current.filter((id) => id !== groupId)
+          : [...current, groupId],
+      };
+    });
+  }
+
+  async function saveEditModifiers(product: Product) {
+    if (!token) return;
+    const selected = modifierEdits[product.id] ?? [];
+    setModifierSavingId(product.id);
+    setError("");
+    try {
+      await setProductModifierGroups(
+        token,
+        product.id,
+        selected.map((modifierGroupId, i) => ({ modifierGroupId, sortOrder: i })),
+      );
+      cancelEditModifiers(product.id);
+      await load();
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : "Failed to update modifier groups");
+    } finally {
+      setModifierSavingId(null);
     }
   }
 
@@ -579,6 +655,7 @@ function ProductsPageContent() {
                 {groupProducts.map((p) => {
                   const isEditingPrice = p.id in priceEdits;
                   const isEditingUnits = p.id in unitsEdits;
+                  const isEditingModifiers = p.id in modifierEdits;
                   const compatibleUnits = units.filter(
                     (u) => u.id !== p.unit.id && sameFamily(u, p.unit),
                   );
@@ -631,6 +708,11 @@ function ProductsPageContent() {
                               <span className="text-xs text-slate-400">
                                 per {p.unit.name} ({p.unit.code})
                               </span>
+                              {p.hasModifiers && (
+                                <span className="rounded-md bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700">
+                                  Modifiers
+                                </span>
+                              )}
                             </div>
                             {p.units && p.units.length > 1 && (
                               <p className="mt-0.5 text-xs text-slate-400">
@@ -693,6 +775,22 @@ function ProductsPageContent() {
                               )}
                               <button
                                 type="button"
+                                disabled={modifierEditLoadingId === p.id}
+                                onClick={() =>
+                                  isEditingModifiers
+                                    ? cancelEditModifiers(p.id)
+                                    : startEditModifiers(p)
+                                }
+                                className="text-xs font-medium text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+                              >
+                                {modifierEditLoadingId === p.id
+                                  ? "…"
+                                  : isEditingModifiers
+                                    ? "Close"
+                                    : "Edit modifiers"}
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() => toggleStatus(p)}
                                 className={`text-xs font-medium ${
                                   p.status === "active"
@@ -743,6 +841,66 @@ function ProductsPageContent() {
                             <button
                               type="button"
                               onClick={() => cancelEditUnits(p.id)}
+                              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-500 hover:bg-white"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {isEditingModifiers && (
+                        <div className="mt-3 rounded-lg bg-slate-50 p-3">
+                          <p className="mb-2 text-xs font-medium text-slate-500">
+                            Attach Modifier Groups — attaching any group switches this product to
+                            &quot;Modifiers&quot; style; detaching all of them switches it back to
+                            &quot;Simple&quot;.
+                          </p>
+                          {modifierLibrary.length === 0 ? (
+                            <p className="text-sm text-slate-500">
+                              No modifier groups yet. Build one on the{" "}
+                              <a
+                                href="/dashboard/modifier-groups"
+                                className="font-medium text-emerald-600 hover:underline"
+                              >
+                                Modifier Groups
+                              </a>{" "}
+                              page first.
+                            </p>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              {modifierLibrary.map((g) => {
+                                const checked = (modifierEdits[p.id] ?? []).includes(g.id);
+                                return (
+                                  <button
+                                    key={g.id}
+                                    type="button"
+                                    onClick={() => toggleEditModifierGroup(p.id, g.id)}
+                                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                                      checked
+                                        ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                                    }`}
+                                  >
+                                    {g.name}
+                                    {g.isRequired && " *"}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => saveEditModifiers(p)}
+                              disabled={modifierSavingId === p.id}
+                              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                            >
+                              {modifierSavingId === p.id ? "Saving…" : "Save modifier groups"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => cancelEditModifiers(p.id)}
                               className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-500 hover:bg-white"
                             >
                               Cancel

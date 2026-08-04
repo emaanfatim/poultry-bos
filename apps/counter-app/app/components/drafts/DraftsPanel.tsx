@@ -118,18 +118,45 @@ export function DraftsPanel({
                   </p>
 
                   {/* Full item list */}
-                  <div className="mt-3 space-y-1 rounded-xl bg-slate-50 px-3 py-2">
-                    {draft.items.map((item, i) => (
-                      <div key={i} className="flex justify-between text-xs">
-                        <span className="text-slate-600">
-                          {item.productName} × {item.quantity} {item.unit}
-                        </span>
-                        <span className="font-medium text-slate-700">
-                          {currencySymbol}{" "}
-                          {(parseFloat(item.rate) * item.quantity).toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="mt-3 space-y-1.5 rounded-xl bg-slate-50 px-3 py-2">
+                    {draft.items.map((item, i) => {
+                      const hasModifiers = item.modifiers && item.modifiers.length > 0;
+                      const hasNote = item.kitchenNote && item.kitchenNote.trim().length > 0;
+                      return (
+                        <div key={i}>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-600">
+                              {item.productName} × {item.quantity} {item.unit}
+                            </span>
+                            <span className="font-medium text-slate-700">
+                              {currencySymbol}{" "}
+                              {(parseFloat(item.rate) * item.quantity).toLocaleString()}
+                            </span>
+                          </div>
+                          {/* Modifier selections */}
+                          {hasModifiers && (
+                            <ul className="mt-0.5 space-y-0.5 pl-3">
+                              {item.modifiers!.map((mod, mIdx) => (
+                                <li key={mIdx} className="text-xs text-slate-400">
+                                  + {mod.label}
+                                  {parseFloat(mod.totalCharge) > 0 && (
+                                    <span className="ml-1 text-emerald-600">
+                                      +{currencySymbol} {mod.totalCharge}
+                                    </span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          {/* Kitchen note */}
+                          {hasNote && (
+                            <p className="mt-0.5 pl-3 text-xs italic text-violet-500">
+                              "{item.kitchenNote}"
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Actions */}

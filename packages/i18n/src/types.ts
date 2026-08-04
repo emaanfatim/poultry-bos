@@ -33,6 +33,18 @@ export interface TranslationKeys {
     addToCart: string;
     perUnit: string;
     noProducts: string;
+    // Product-catalogue handover §3.1 — Modifiers-style product picker
+    customize: string;
+    required: string;
+    optional: string;
+    selectOne: string;
+    selectAny: string;
+    includedFree: string;
+    extraEach: string;
+    note: string;
+    notePlaceholder: string;
+    addToCartWithOptions: string;
+    selectionRequired: string;
   };
   payment: {
     title: string;
@@ -81,7 +93,27 @@ export interface TranslationKeys {
   subtotalAfterDiscount: string;
   rounding: string;
   viewReceipt: string;
+  /** Button on the customer receipt to switch to the kitchen/fulfillment ticket view */
+  viewTicket: string;
 };
+  // Generic kitchen/fulfillment ticket — what to prepare, no prices. Works
+  // identically for any business type (product-catalogue handover §4).
+  ticket: {
+    title: string;
+    subtitle: string;
+    receiptNo: string;
+    date: string;
+    cashier: string;
+    customer: string;
+    product: string;
+    quantity: string;
+    notes: string;
+    print: string;
+    exportPdf: string;
+    exportingPdf: string;
+    backToReceipt: string;
+    noItems: string;
+  };
   prices: {
     title: string;
     subtitle: string;
@@ -99,6 +131,7 @@ export interface TranslationKeys {
     totalRevenue: string;
     transactionCount: string;
     productBreakdown: string;
+    modifierBreakdown: string;
     noSales: string;
   };
   common: {

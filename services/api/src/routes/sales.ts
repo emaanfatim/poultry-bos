@@ -1,22 +1,27 @@
 import { Hono } from "hono";
-import { and, eq, gte, lt, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   branches,
   cashierDiscountCategories,
   cashierDiscountProducts,
+  modifierGroups,
+  modifierOptions,
   paymentMethods,
+  productModifierGroups,
   productSubCategories,
   productUnits,
   products,
   tillSessions,
   transactionChargeLines,
   transactionLineItems,
+  transactionLineModifiers,
   transactions,
   units,
   users,
 } from "@repo/database";
 import { getDb } from "../db";
+import type { Database } from "@repo/database";
 import {
   endOfToday,
   multiplyLineTotal,
@@ -42,6 +47,7 @@ import {
   toChargeRateLineLike,
 } from "./charge-resolution";
 import { authMiddleware } from "../middleware/auth";
+import { syncLinkedGroupOptions } from "./modifier-groups";
 import type { AppVariables } from "../types";
 
 export const salesRoutes = new Hono<{ Variables: AppVariables }>();
@@ -57,6 +63,23 @@ const createSaleSchema = z
           quantity: z.number().positive(),
           // Which unit `quantity` is expressed in. Defaults to the product's priced unit.
           unitId: z.string().uuid().optional(),
+          // Product-catalogue handover §3.1 — the cashier's modifier
+          // picks for this line (Size, Milk, Shots, Packaging, ...). Only
+          // the group/option IDs and chosen quantity are trusted from the
+          // client; label/price are always re-resolved server-side below.
+          modifiers: z
+            .array(
+              z.object({
+                modifierGroupId: z.string().uuid(),
+                modifierOptionId: z.string().uuid(),
+                quantity: z.number().int().min(1).max(999).optional().default(1),
+              }),
+            )
+            .optional()
+            .default([]),
+          // Free text, e.g. "no onions" — never priced, never shown on the
+          // customer receipt, only on the kitchen/fulfillment ticket.
+          kitchenNote: z.string().max(500).optional(),
         }),
       )
       .min(1),
@@ -124,6 +147,132 @@ function legacyPaymentMethodEnum(name: string): "cash" | "card" | "wallet" {
   if (lower.includes("card")) return "card";
   if (lower.includes("cash")) return "cash";
   return "wallet";
+}
+
+type ModifierSelection = {
+  modifierGroupId: string;
+  modifierOptionId: string;
+  label: string;
+  quantity: number;
+  unitCharge: string;
+  totalCharge: string;
+};
+
+// Discriminated union keyed on the literal `ok` flag (not on `error`'s
+// nullability) so TypeScript can actually narrow the return type at call
+// sites. See: a union where one branch is `error: string` and the other is
+// `error: null` is NOT a discriminated union to the type checker, because
+// `string` isn't a literal type — narrowing on `error` alone silently
+// fails and every property access afterward sees the full union.
+type ModifierResolutionResult =
+  | { ok: false; error: string }
+  | { ok: true; modifierTotal: number; selections: ModifierSelection[] };
+
+/**
+ * Product-catalogue handover §3.1/§4 — validates a line's requested
+ * modifier picks against the product's actually-attached groups and
+ * re-prices every option from the DB (never trusts the client's price),
+ * then checks every required group got a selection. Linked groups (e.g.
+ * Packaging) are synced first so their price never drifts from the real
+ * catalogue product. Returns { ok: false, error } on any mismatch.
+ */
+async function resolveLineModifiers(
+  db: Database,
+  tenantId: string,
+  productId: string,
+  productName: string,
+  requested: Array<{ modifierGroupId: string; modifierOptionId: string; quantity: number }>,
+): Promise<ModifierResolutionResult> {
+  const attachments = await db
+    .select()
+    .from(productModifierGroups)
+    .where(and(eq(productModifierGroups.tenantId, tenantId), eq(productModifierGroups.productId, productId)));
+
+  if (attachments.length === 0) {
+    if (requested.length > 0) {
+      return { ok: false, error: `${productName} does not have any modifiers to select` };
+    }
+    return { ok: true, modifierTotal: 0, selections: [] };
+  }
+
+  const groupIds = attachments.map((a) => a.modifierGroupId);
+  const groups = await db.select().from(modifierGroups).where(inArray(modifierGroups.id, groupIds));
+
+  for (const group of groups) {
+    if (group.linkedToSubCategoryId) {
+      await syncLinkedGroupOptions(db, tenantId, group.id, group.linkedToSubCategoryId);
+    }
+  }
+
+  const options = await db
+    .select()
+    .from(modifierOptions)
+    .where(inArray(modifierOptions.modifierGroupId, groupIds));
+
+  const groupById = new Map(groups.map((g) => [g.id, g]));
+  const optionById = new Map(options.map((o) => [o.id, o]));
+  const attachmentByGroupId = new Map(attachments.map((a) => [a.modifierGroupId, a]));
+
+  // Group the cashier's requested picks by modifier group, so single/multi
+  // selection-type and required-group rules can be checked per group.
+  const requestedByGroup = new Map<string, typeof requested>();
+  for (const pick of requested) {
+    const group = groupById.get(pick.modifierGroupId);
+    const attachment = attachmentByGroupId.get(pick.modifierGroupId);
+    if (!group || !attachment) {
+      return { ok: false, error: `${productName} does not offer that modifier group` };
+    }
+    const option = optionById.get(pick.modifierOptionId);
+    if (!option || option.modifierGroupId !== pick.modifierGroupId) {
+      return { ok: false, error: `Invalid option selected for ${group.name}` };
+    }
+    if (option.maxQuantity != null && pick.quantity > option.maxQuantity) {
+      return { ok: false, error: `${option.label} allows at most ${option.maxQuantity}` };
+    }
+    const list = requestedByGroup.get(pick.modifierGroupId) ?? [];
+    list.push(pick);
+    requestedByGroup.set(pick.modifierGroupId, list);
+  }
+
+  for (const group of groups) {
+    const attachment = attachmentByGroupId.get(group.id)!;
+    const isRequired = attachment.isRequiredOverride ?? group.isRequired;
+    const picks = requestedByGroup.get(group.id) ?? [];
+
+    if (isRequired && picks.length === 0) {
+      return { ok: false, error: `${group.name} is required for ${productName}` };
+    }
+    if (group.selectionType === "single" && picks.length > 1) {
+      return { ok: false, error: `Only one option can be selected for ${group.name}` };
+    }
+  }
+
+  let modifierTotal = 0;
+  const selections: ModifierSelection[] = [];
+
+  for (const pick of requested) {
+    const group = groupById.get(pick.modifierGroupId)!;
+    const option = optionById.get(pick.modifierOptionId)!;
+    // modifier_charge = max(0, selectedQty - includedFreeQuantity) x
+    // pricePerAdditionalUnit — covers flat-priced, priced-with-free-
+    // allowance, and purely descriptive (isPriced=false / rate 0) options
+    // with the same formula (schema note on transaction_line_modifiers).
+    const billableQty = group.isPriced ? Math.max(0, pick.quantity - option.includedFreeQuantity) : 0;
+    const unitCharge = group.isPriced ? option.pricePerAdditionalUnit : "0.00";
+    const totalCharge = roundMoney(billableQty * parseFloat(unitCharge));
+    modifierTotal += parseFloat(totalCharge);
+
+    selections.push({
+      modifierGroupId: group.id,
+      modifierOptionId: option.id,
+      label: `${group.name}: ${option.label}`,
+      quantity: pick.quantity,
+      unitCharge,
+      totalCharge,
+    });
+  }
+
+  return { ok: true, modifierTotal, selections };
 }
 
 salesRoutes.post("/", async (c) => {
@@ -225,6 +374,9 @@ salesRoutes.post("/", async (c) => {
     quantity: string;
     rate: string;
     lineTotal: string;
+    modifierTotal: string;
+    kitchenNote: string | null;
+    modifierSelections: ModifierSelection[];
     categoryId: string;
     subCategoryId: string;
   }> = [];
@@ -281,7 +433,18 @@ salesRoutes.post("/", async (c) => {
       rate = rateForUnit(row.currentPrice, row.priceUnit, sellUnit);
     }
 
-    const lineTotal = multiplyLineTotal(item.quantity, rate);
+    const baseLineTotal = multiplyLineTotal(item.quantity, rate);
+
+    // Product-catalogue handover §3.1/§4 — resolve + re-price this line's
+    // modifier picks against the product's actually-attached groups.
+    // modifierTotal is a flat addition (not multiplied by quantity),
+    // matching the schema note on transaction_line_items.modifierTotal.
+    const modifierResult = await resolveLineModifiers(db, tenantId, row.id, row.name, item.modifiers);
+    if (!modifierResult.ok) {
+      return c.json({ error: modifierResult.error }, 400);
+    }
+
+    const lineTotal = roundMoney(parseFloat(baseLineTotal) + modifierResult.modifierTotal);
     subtotal += parseFloat(lineTotal);
 
     const context = await loadProductChargeContext(db, tenantId, branchId, row.id);
@@ -296,6 +459,9 @@ salesRoutes.post("/", async (c) => {
       quantity: roundQuantity(item.quantity),
       rate,
       lineTotal,
+      modifierTotal: roundMoney(modifierResult.modifierTotal),
+      kitchenNote: item.kitchenNote?.trim() || null,
+      modifierSelections: modifierResult.selections,
       categoryId: context.categoryId,
       subCategoryId: context.subCategoryId,
     });
@@ -586,10 +752,31 @@ salesRoutes.post("/", async (c) => {
         unit: line.unit,
         quantity: line.quantity,
         rate: line.rate,
+        modifierTotal: line.modifierTotal,
         lineTotal: line.lineTotal,
+        kitchenNote: line.kitchenNote,
       })),
     )
     .returning();
+
+  // Product-catalogue handover §3.1 — persist each line's modifier picks
+  // as their own snapshotted rows, so a kitchen ticket or historical
+  // receipt never drifts if the modifier option is edited/deleted later.
+  const modifierRowsToInsert = insertedLines.flatMap((insertedLine, i) =>
+    (lineItems[i]?.modifierSelections ?? []).map((selection) => ({
+      tenantId,
+      transactionLineItemId: insertedLine.id,
+      modifierGroupId: selection.modifierGroupId,
+      modifierOptionId: selection.modifierOptionId,
+      optionLabel: selection.label,
+      quantity: selection.quantity,
+      unitCharge: selection.unitCharge,
+      totalCharge: selection.totalCharge,
+    })),
+  );
+  if (modifierRowsToInsert.length > 0) {
+    await db.insert(transactionLineModifiers).values(modifierRowsToInsert);
+  }
 
   // Translate the synthetic `idx:N` placeholders used during charge
   // resolution into the real, DB-generated transaction_line_items ids.
@@ -635,7 +822,10 @@ salesRoutes.post("/", async (c) => {
       customerPhone: transaction!.customerPhone,
       createdAt: transaction!.createdAt.toISOString(),
       createdByName: user.displayName,
-      lineItems: insertedLines,
+      lineItems: insertedLines.map((line, i) => ({
+        ...line,
+        modifiers: lineItems[i]?.modifierSelections ?? [],
+      })),
       chargeLines: allChargeLines,
     },
   });
@@ -694,6 +884,45 @@ salesRoutes.get("/daily-summary", async (c) => {
       transactionLineItems.unit,
     );
 
+  // Per-transaction modifier picks — e.g. Receipt B...-0007 had "Skin: Skin"
+  // and "Size: Medium". Shown as a column on the transaction row rather
+  // than a separate aggregate table, so the cashier/owner can see exactly
+  // which modifiers were on which sale. Joined through
+  // transactionLineItems (not the transaction line modifier's own
+  // transactionLineItemId FK directly) so we can filter on the same
+  // tenant/branch/date window as everything else above.
+  const todayTransactionIds = todaySales.map((sale) => sale.id);
+  const modifierRows = todayTransactionIds.length
+    ? await db
+        .select({
+          transactionId: transactionLineItems.transactionId,
+          optionLabel: transactionLineModifiers.optionLabel,
+          quantity: transactionLineModifiers.quantity,
+          totalCharge: transactionLineModifiers.totalCharge,
+        })
+        .from(transactionLineModifiers)
+        .innerJoin(
+          transactionLineItems,
+          eq(transactionLineModifiers.transactionLineItemId, transactionLineItems.id),
+        )
+        .where(
+          and(
+            eq(transactionLineModifiers.tenantId, tenantId),
+            inArray(transactionLineItems.transactionId, todayTransactionIds),
+          ),
+        )
+    : [];
+
+  const modifiersByTransactionId = new Map<
+    string,
+    Array<{ label: string; quantity: number; totalCharge: string }>
+  >();
+  for (const row of modifierRows) {
+    const list = modifiersByTransactionId.get(row.transactionId) ?? [];
+    list.push({ label: row.optionLabel, quantity: row.quantity, totalCharge: row.totalCharge });
+    modifiersByTransactionId.set(row.transactionId, list);
+  }
+
   const summaryDateKey = todayDateKey();
   return c.json({
     summary: {
@@ -732,6 +961,7 @@ salesRoutes.get("/daily-summary", async (c) => {
           customerName: sale.customerName,
           customerPhone: sale.customerPhone,
           createdAt: sale.createdAt.toISOString(),
+          modifiers: modifiersByTransactionId.get(sale.id) ?? [],
         })),
     },
   });
@@ -794,6 +1024,19 @@ salesRoutes.get("/:id", async (c) => {
       ),
     );
 
+  const lineItemIds = lineItems.map((l) => l.id);
+  const modifierRows = lineItemIds.length
+    ? await db
+        .select()
+        .from(transactionLineModifiers)
+        .where(
+          and(
+            eq(transactionLineModifiers.tenantId, tenantId),
+            inArray(transactionLineModifiers.transactionLineItemId, lineItemIds),
+          ),
+        )
+    : [];
+
   return c.json({
     transaction: {
       ...transaction,
@@ -808,6 +1051,16 @@ salesRoutes.get("/:id", async (c) => {
         modifierTotal: line.modifierTotal,
         lineTotal: line.lineTotal,
         kitchenNote: line.kitchenNote,
+        modifiers: modifierRows
+          .filter((m) => m.transactionLineItemId === line.id)
+          .map((m) => ({
+            modifierGroupId: m.modifierGroupId,
+            modifierOptionId: m.modifierOptionId,
+            label: m.optionLabel,
+            quantity: m.quantity,
+            unitCharge: m.unitCharge,
+            totalCharge: m.totalCharge,
+          })),
       })),
       chargeLines,
     },

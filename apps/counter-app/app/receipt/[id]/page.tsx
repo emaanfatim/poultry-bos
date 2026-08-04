@@ -9,6 +9,7 @@ import { ReceiptPreview } from "../../components/sales/ReceiptPreview";
 import { useAuth } from "../../providers/AuthProvider";
 import { useI18n } from "../../providers/I18nProvider";
 import { fetchTransaction } from "../../services/sales";
+import Link from "next/link";
 
 export default function ReceiptPage() {
   const params = useParams<{ id: string }>();
@@ -32,11 +33,24 @@ export default function ReceiptPage() {
         <main className="flex-1 p-4">
           {isLoading && <p className="text-center">{t.common.loading}</p>}
           {transaction && (
-            <ReceiptPreview
-              transaction={transaction}
-              onPrint={() => window.print()}
-              onNewSale={() => router.push("/pos")}
-            />
+            <>
+              <ReceiptPreview
+                transaction={transaction}
+                onPrint={() => window.print()}
+                onNewSale={() => router.push("/pos")}
+              />
+              {/* Kitchen ticket link — shown below receipt actions, visible to
+                  any staff member who needs to hand a slip to the kitchen */}
+              <div className="mx-auto mt-3 max-w-lg print:hidden">
+                <Link
+                  href={`/ticket/${transaction.id}`}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  <span>🍽</span>
+                  <span>Print Kitchen Ticket</span>
+                </Link>
+              </div>
+            </>
           )}
         </main>
       </div>

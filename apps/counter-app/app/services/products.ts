@@ -1,4 +1,4 @@
-import type { BulkPriceUpdate, Product } from "@repo/types";
+import type { BulkPriceUpdate, Product, ProductModifierGroup } from "@repo/types";
 import { api } from "./api";
 
 export async function fetchProducts(token: string): Promise<Product[]> {
@@ -19,4 +19,15 @@ export async function setProductSellableUnits(
   unitIds: string[],
 ): Promise<void> {
   await api.put(`/products/${productId}/units`, { unitIds }, token);
+}
+
+export async function fetchProductModifierGroups(
+  token: string,
+  productId: string,
+): Promise<ProductModifierGroup[]> {
+  const data = await api.get<{ modifierGroups: ProductModifierGroup[] }>(
+    `/products/${productId}/modifier-groups`,
+    token,
+  );
+  return data.modifierGroups;
 }

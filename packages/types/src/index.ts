@@ -35,9 +35,75 @@ export interface Product {
   categoryName: string;
   subCategoryName: string;
   imageKey?: string | null;
+  // Catalogue style (product-catalogue handover §2) — true once at least
+  // one active Modifier Group is attached. There's no separate flag to set:
+  // attaching/detaching groups on /products/:id/modifier-groups IS the switch
+  // between "Simple" and "Modifiers" style for this product.
+  hasModifiers?: boolean;
+}
+
+// ─── Modifier Groups — reusable customization library (handover §2/§3) ────
+
+export type ModifierSelectionType = "single" | "multi";
+
+export interface ModifierOption {
+  id: string;
+  modifierGroupId: string;
+  label: string;
+  // How many units of this option are included free before pricePerAdditionalUnit
+  // starts applying (e.g. 1 free espresso shot, then +Rs 50 each after).
+  includedFreeQuantity: number;
+  pricePerAdditionalUnit: string;
+  // null = unlimited
+  maxQuantity: number | null;
+  // Set when this option's price is pulled live from a real catalogue
+  // product instead of being typed in (e.g. "Small Box" from Packaging).
+  linkedProductId?: string | null;
+  sortOrder: number;
+}
+
+export interface ModifierGroup {
+  id: string;
+  name: string;
+  selectionType: ModifierSelectionType;
+  isRequired: boolean;
+  isPriced: boolean;
+  // Set = a "Linked Group": options are derived live from the active
+  // products in this sub-category (e.g. Packaging), never manually typed.
+  linkedToSubCategoryId?: string | null;
+  isActive: boolean;
+  options: ModifierOption[];
+}
+
+// A group as attached to one specific product — sortOrder/isRequired here
+// are that product's own view of the shared library group.
+export interface ProductModifierGroup extends ModifierGroup {
+  isRequiredOverride?: boolean | null;
+}
+
+// A modifier choice actually made on a cart/transaction line — mirrors
+// transactionLineModifiers 1:1 (see database schema). Everything here is a
+// snapshot (label/unitCharge) so it never drifts if the underlying
+// modifier option is edited later.
+export interface SelectedModifier {
+  modifierGroupId: string;
+  modifierOptionId: string;
+  // Pre-composed as "Group: Option" (e.g. "Size: Large") at selection time,
+  // so a receipt/ticket can render it standalone without re-fetching the
+  // modifier group catalogue. Matches transactionLineModifiers.optionLabel.
+  label: string;
+  quantity: number;
+  unitCharge: string;
+  totalCharge: string;
 }
 
 export interface CartLineItem {
+  // Unique identity for this cart line — just productId for a Simple
+  // product, or productId + a signature of its modifier selections for a
+  // Modifiers-style product. This is what lets two differently-customized
+  // orders of the same base product (e.g. a Large Oat coffee and a Small
+  // Almond coffee) sit as separate cart lines instead of merging.
+  cartItemId: string;
   productId: string;
   productName: string;
   unit: Unit;
@@ -49,6 +115,15 @@ export interface CartLineItem {
   basePrice?: string;
   priceUnit?: Unit;
   sellableUnits?: Unit[];
+  // Product-catalogue handover §3.1 — this line's chosen modifiers (Size,
+  // Milk, Shots, etc.) and their combined charge. modifierTotal is a flat
+  // addition to quantity×rate, not multiplied by quantity (matches the
+  // server: lineTotal = base price × qty + modifierTotal).
+  modifiers?: SelectedModifier[];
+  modifierTotal?: string;
+  // Free text, e.g. "no onions" — never priced, never shown on the
+  // customer receipt, only on the kitchen/fulfillment ticket.
+  kitchenNote?: string;
 }
 
 export interface TransactionLineItem {
@@ -58,7 +133,10 @@ export interface TransactionLineItem {
   unit: string;
   quantity: string;
   rate: string;
+  modifierTotal?: string;
   lineTotal: string;
+  kitchenNote?: string | null;
+  modifiers?: SelectedModifier[];
 }
 
 export interface TransactionChargeLine {
@@ -168,7 +246,18 @@ export interface PaymentMethod {
 export type DiscountType = "percentage" | "flat";
 
 export interface CreateSaleRequest {
-  items: Array<{ productId: string; quantity: number; unitId?: string }>;
+  items: Array<{
+    productId: string;
+    quantity: number;
+    unitId?: string;
+    // Product-catalogue handover §3.1 — the cashier's modifier selections
+    // for this line (Size, Milk, Shots, etc.). Server re-validates and
+    // re-prices these against the product's attached modifier groups
+    // rather than trusting the client's totalCharge.
+    modifiers?: Array<{ modifierGroupId: string; modifierOptionId: string; quantity: number }>;
+    // Free text, e.g. "no onions" — kitchen/fulfillment ticket only.
+    kitchenNote?: string;
+  }>;
   paymentMethodId: string;
   notes?: string;
   billType?: BillType;
@@ -256,6 +345,15 @@ export interface DailySummary {
     customerName?: string | null;
     customerPhone?: string | null;
     createdAt: string;
+    // Modifier options selected on this specific sale — e.g. "Skin: Skin"
+    // once, "Size: Medium" once. Only options that actually changed the
+    // total show a nonzero totalCharge; free/descriptive options show
+    // "0.00".
+    modifiers: Array<{
+      label: string;
+      quantity: number;
+      totalCharge: string;
+    }>;
   }>;
 }
 
@@ -265,6 +363,8 @@ export interface DraftItem {
   quantity: number;
   rate: string;
   unit: string;
+  modifiers?: SelectedModifier[];
+  kitchenNote?: string;
 }
 
 export interface Draft {

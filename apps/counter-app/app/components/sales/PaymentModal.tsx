@@ -424,6 +424,27 @@ export function PaymentModal({
               <p className="text-sm font-semibold text-slate-900">{t.receipt.deliveryNote}</p>
               <p className="mt-0.5 text-xs text-slate-500">{t.receipt.deliveryNoteDesc}</p>
             </button>
+
+            {/* Miscellaneous — only shown when the owner has granted this
+                cashier the canCreateMiscellaneousBills permission. Uses its
+                own M-prefixed receipt sequence and is excluded from
+                regulatory export queries (see sales.ts §7). */}
+            {user?.canCreateMiscellaneousBills && (
+              <button
+                type="button"
+                onClick={() => setBillType("miscellaneous")}
+                className={`col-span-2 rounded-xl border-2 p-3 text-left transition-all ${
+                  billType === "miscellaneous"
+                    ? "border-violet-500 bg-violet-50"
+                    : "border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <p className="text-sm font-semibold text-slate-900">Miscellaneous</p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Internal/off-record sale — M-prefixed receipt, excluded from tax reports
+                </p>
+              </button>
+            )}
           </div>
         </div>
 

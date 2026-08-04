@@ -67,6 +67,6 @@ export function formatCurrency(amount: string | number, symbol: string): string 
   })}`;
 }
 
-export function calcLineTotal(quantity: number, rate: string): string {
-  return (quantity * parseFloat(rate)).toFixed(2);
+export function calcLineTotal(quantity: number, rate: string, modifierTotal: string = "0"): string {
+  return (quantity * parseFloat(rate) + parseFloat(modifierTotal)).toFixed(2);
 }

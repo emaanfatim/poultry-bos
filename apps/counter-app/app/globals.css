@@ -26,4 +26,12 @@ body {
   .print\:hidden {
     display: none !important;
   }
+
+  /* When printing from the kitchen ticket page, only show the ticket body */
+  #kitchen-ticket-print {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    font-size: 13px;
+  }
 }
