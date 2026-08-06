@@ -317,8 +317,23 @@ export interface BulkPriceUpdate {
   price: string;
 }
 
+export type SummaryPeriod = "hourly" | "daily" | "weekly" | "monthly" | "yearly";
+
 export interface DailySummary {
   date: string;
+  // Which period this summary covers. Omitted/undefined is treated as
+  // "daily" for backward compatibility with older clients that only ever
+  // requested today's summary.
+  period?: SummaryPeriod;
+  // Human-readable label for the covered range (e.g. "Aug 2026" for
+  // monthly, "3–9 Aug 2026" for weekly). Always present; for "daily" it
+  // matches what the client would compute from `date` itself, but is
+  // provided so the client doesn't need period-specific date math.
+  rangeLabel?: string;
+  // Time-series buckets for the "Sales Trend" chart, at a granularity
+  // matching the period (e.g. by hour for "daily", by day for "weekly",
+  // by month for "yearly"). Always in chronological order.
+  trend?: Array<{ label: string; fullLabel: string; revenue: string }>;
   totalRevenue: string;
   transactionCount: number;
   avgOrderValue: string;

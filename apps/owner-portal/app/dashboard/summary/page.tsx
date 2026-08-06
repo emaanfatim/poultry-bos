@@ -2,12 +2,39 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Eye, X } from "lucide-react";
-import type { DailySummary, Transaction } from "@repo/types";
+import type { DailySummary, SummaryPeriod, Transaction } from "@repo/types";
 import { AuthGuard } from "../../components/AuthGuard";
 import { Header } from "../../components/Header";
 import { ReceiptPreview } from "../../components/sales/ReceiptPreview";
 import { useAuth } from "../../providers/AuthProvider";
 import { fetchDailySummary, fetchTransaction, formatCurrency } from "../../services/sales";
+
+// ─── Period selector ───────────────────────────────────────────────────────
+const PERIOD_OPTIONS: Array<{ value: SummaryPeriod; label: string }> = [
+  { value: "hourly", label: "Hourly" },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+];
+
+// Short phrase used in "No sales yet ___" / "sales ___" copy so it matches
+// whichever period is currently selected instead of always saying "today".
+function periodPhrase(period?: SummaryPeriod): string {
+  switch (period) {
+    case "hourly":
+      return "this hour";
+    case "weekly":
+      return "this week";
+    case "monthly":
+      return "this month";
+    case "yearly":
+      return "this year";
+    case "daily":
+    default:
+      return "today";
+  }
+}
 
 // ─── Small inline icons (avoids pulling in a new icon dependency) ─────────
 function ChartIcon() {
@@ -31,32 +58,80 @@ function FlameIcon() {
   );
 }
 
-function formatHourLabel(hour: number): string {
-  if (hour === 0) return "12a";
-  if (hour < 12) return `${hour}a`;
-  if (hour === 12) return "12p";
-  return `${hour - 12}p`;
+// ─── Sales Trend card helpers ──────────────────────────────────────────────
+function trendTitle(period?: SummaryPeriod): string {
+  switch (period) {
+    case "hourly":
+      return "Sales by 5 Minutes";
+    case "weekly":
+    case "monthly":
+      return "Sales by Day";
+    case "yearly":
+      return "Sales by Month";
+    case "daily":
+    default:
+      return "Sales by Hour";
+  }
 }
 
-function SalesByHourCard({ summary, symbol }: { summary: DailySummary; symbol: string }) {
-  const hourly = useMemo(() => {
-    const buckets = Array.from({ length: 24 }, () => 0);
-    for (const tx of summary.transactions ?? []) {
-      const hour = new Date(tx.createdAt).getHours();
-      buckets[hour] += parseFloat(tx.total);
-    }
-    return buckets;
-  }, [summary]);
+function trendCaption(period?: SummaryPeriod): string {
+  switch (period) {
+    case "hourly":
+      return "5-minute totals";
+    case "weekly":
+    case "monthly":
+      return "Day totals";
+    case "yearly":
+      return "Month totals";
+    case "daily":
+    default:
+      return "Hour-of-day totals";
+  }
+}
 
-  const max = Math.max(...hourly);
-  const busiestHour = max > 0 ? hourly.indexOf(max) : null;
-  const tickHours = [0, 3, 6, 9, 12, 15, 18, 21, 23];
+function busiestBucketLabel(period?: SummaryPeriod): string {
+  switch (period) {
+    case "hourly":
+      return "Busiest 5 minutes";
+    case "weekly":
+    case "monthly":
+      return "Busiest day";
+    case "yearly":
+      return "Busiest month";
+    case "daily":
+    default:
+      return "Busiest hour";
+  }
+}
+
+// Picks a readable subset of bucket indices to label under the chart —
+// all of them when there are few buckets (e.g. 7 for weekly, 12 for
+// hourly/yearly), otherwise ~8 evenly spaced ticks (e.g. for a 28-31
+// bucket monthly view) so labels don't overlap.
+function pickTickIndices(count: number): number[] {
+  if (count <= 12) return Array.from({ length: count }, (_, i) => i);
+  const tickCount = 8;
+  const step = (count - 1) / (tickCount - 1);
+  const indices = new Set<number>();
+  for (let i = 0; i < tickCount; i++) {
+    indices.add(Math.round(i * step));
+  }
+  return Array.from(indices).sort((a, b) => a - b);
+}
+
+function SalesTrendCard({ summary, symbol }: { summary: DailySummary; symbol: string }) {
+  const phrase = periodPhrase(summary.period);
+  const trend = summary.trend ?? [];
+  const max = Math.max(0, ...trend.map((point) => parseFloat(point.revenue)));
+  const busiestIdx =
+    max > 0 ? trend.findIndex((point) => parseFloat(point.revenue) === max) : -1;
+  const tickIndices = useMemo(() => pickTickIndices(trend.length), [trend.length]);
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
         <ChartIcon />
-        Sales by Hour
+        {trendTitle(summary.period)}
       </h3>
 
       <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
@@ -65,13 +140,14 @@ function SalesByHourCard({ summary, symbol }: { summary: DailySummary; symbol: s
       </div>
 
       <div className="mt-2 flex h-32 items-end gap-1">
-        {hourly.map((value, hour) => {
+        {trend.map((point, idx) => {
+          const value = parseFloat(point.revenue);
           const height = max > 0 ? Math.max((value / max) * 100, value > 0 ? 6 : 3) : 3;
-          const isBusiest = hour === busiestHour;
+          const isBusiest = idx === busiestIdx;
           return (
             <div
-              key={hour}
-              title={`${formatHourLabel(hour)} · ${formatCurrency(value, symbol)}`}
+              key={idx}
+              title={`${point.fullLabel} · ${formatCurrency(value, symbol)}`}
               className={`flex-1 rounded-t ${
                 isBusiest ? "bg-emerald-600" : value > 0 ? "bg-emerald-300" : "bg-slate-100"
               }`}
@@ -82,33 +158,33 @@ function SalesByHourCard({ summary, symbol }: { summary: DailySummary; symbol: s
       </div>
 
       <div className="mt-1 flex justify-between text-[10px] text-slate-400">
-        {tickHours.map((hour) => (
-          <span key={hour}>{formatHourLabel(hour)}</span>
+        {tickIndices.map((idx) => (
+          <span key={idx}>{trend[idx]?.label ?? ""}</span>
         ))}
       </div>
 
       <p className="mt-4 text-xs text-slate-400">
-        {busiestHour !== null ? (
+        {busiestIdx >= 0 ? (
           <>
-            Busiest hour:{" "}
+            {busiestBucketLabel(summary.period)}:{" "}
             <span className="font-semibold text-slate-600">
-              {new Date(2000, 0, 1, busiestHour).toLocaleTimeString(undefined, {
-                hour: "numeric",
-                hour12: true,
-              })}
+              {trend[busiestIdx]?.fullLabel}
             </span>{" "}
             ({formatCurrency(max, symbol)})
           </>
         ) : (
-          "No sales yet today"
+          `No sales yet ${phrase}`
         )}
       </p>
-      <p className="mt-1 text-[11px] text-slate-300">Hour-of-day totals · today</p>
+      <p className="mt-1 text-[11px] text-slate-300">
+        {trendCaption(summary.period)} · {phrase}
+      </p>
     </div>
   );
 }
 
 function TopItemsCard({ summary, symbol }: { summary: DailySummary; symbol: string }) {
+  const phrase = periodPhrase(summary.period);
   const topItems = useMemo(
     () =>
       [...summary.productBreakdown]
@@ -126,7 +202,7 @@ function TopItemsCard({ summary, symbol }: { summary: DailySummary; symbol: stri
       </h3>
 
       {topItems.length === 0 ? (
-        <p className="mt-6 text-center text-sm text-slate-400">No sales yet today</p>
+        <p className="mt-6 text-center text-sm text-slate-400">No sales yet {phrase}</p>
       ) : (
         <div className="mt-4 space-y-3">
           {topItems.map((item, index) => {
@@ -156,17 +232,19 @@ function TopItemsCard({ summary, symbol }: { summary: DailySummary; symbol: stri
         </div>
       )}
 
-      <p className="mt-4 text-[11px] text-slate-300">Best sellers · today</p>
+      <p className="mt-4 text-[11px] text-slate-300">Best sellers · {phrase}</p>
     </div>
   );
 }
 
 export default function OwnerSummaryPage() {
   const { token, tenant } = useAuth();
+  const [period, setPeriod] = useState<SummaryPeriod>("daily");
   const [summary, setSummary] = useState<DailySummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const symbol = tenant?.currencySymbol ?? "Rs";
+  const phrase = periodPhrase(summary?.period ?? period);
 
   // Receipt-view modal — reuses the same ReceiptPreview shown at checkout so
   // an owner can inspect exactly what was printed for a past sale.
@@ -197,36 +275,37 @@ export default function OwnerSummaryPage() {
     if (!token) return;
     setIsLoading(true);
     setError(null);
-    fetchDailySummary(token)
+    fetchDailySummary(token, period)
       .then(setSummary)
       .catch((err) => setError(err instanceof Error ? err.message : "Something went wrong"))
       .finally(() => setIsLoading(false));
   };
 
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => { load(); }, [token, period]);
 
   return (
     <AuthGuard>
       <Header />
       <main className="mx-auto w-full max-w-6xl flex-1 p-4">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">Daily Summary</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Summary</h2>
             {summary && (
               <p className="text-sm text-slate-500">
-                {(() => {
-                  const parts = summary.date.split("-").map(Number);
-                  const [year, month, day] = parts;
-                  if (year === undefined || month === undefined || day === undefined) {
-                    return summary.date;
-                  }
-                  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  });
-                })()}
+                {summary.rangeLabel ??
+                  (() => {
+                    const parts = summary.date.split("-").map(Number);
+                    const [year, month, day] = parts;
+                    if (year === undefined || month === undefined || day === undefined) {
+                      return summary.date;
+                    }
+                    return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    });
+                  })()}
               </p>
             )}
           </div>
@@ -238,6 +317,25 @@ export default function OwnerSummaryPage() {
           >
             {isLoading ? "Refreshing..." : "↻ Refresh"}
           </button>
+        </div>
+
+        {/* Period selector — hourly / daily / weekly / monthly / yearly */}
+        <div className="mb-6 inline-flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+          {PERIOD_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setPeriod(option.value)}
+              aria-pressed={period === option.value}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                period === option.value
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "text-slate-600 hover:bg-white hover:text-slate-900"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
 
         {isLoading && <p className="text-slate-500">Loading...</p>}
@@ -259,7 +357,7 @@ export default function OwnerSummaryPage() {
                 <p className="mt-2 text-3xl font-bold text-slate-900">
                   {summary.transactionCount}
                 </p>
-                <p className="mt-1 text-xs text-slate-400">sales today</p>
+                <p className="mt-1 text-xs text-slate-400">sales {phrase}</p>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -300,7 +398,7 @@ export default function OwnerSummaryPage() {
 
             {/* Extra owner-only widgets: Sales by Hour + Top Items */}
             <div className="mb-6 grid gap-4 lg:grid-cols-2">
-              <SalesByHourCard summary={summary} symbol={symbol} />
+              <SalesTrendCard summary={summary} symbol={symbol} />
               <TopItemsCard summary={summary} symbol={symbol} />
             </div>
 
@@ -310,7 +408,7 @@ export default function OwnerSummaryPage() {
                 Product Breakdown
               </h3>
               {summary.productBreakdown.length === 0 ? (
-                <p className="p-6 text-center text-slate-500">No sales yet today.</p>
+                <p className="p-6 text-center text-slate-500">No sales yet {phrase}.</p>
               ) : (
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 text-slate-600">
@@ -356,7 +454,7 @@ export default function OwnerSummaryPage() {
                 Transactions
               </h3>
               {!summary.transactions || summary.transactions.length === 0 ? (
-                <p className="p-6 text-center text-slate-500">No sales yet today.</p>
+                <p className="p-6 text-center text-slate-500">No sales yet {phrase}.</p>
               ) : (
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 text-slate-600">

@@ -1,8 +1,14 @@
-import type { DailySummary, Transaction } from "@repo/types";
+import type { DailySummary, SummaryPeriod, Transaction } from "@repo/types";
 import { api } from "./api";
 
-export async function fetchDailySummary(token: string): Promise<DailySummary> {
-  const data = await api.get<{ summary: DailySummary }>("/sales/daily-summary", token);
+export async function fetchDailySummary(
+  token: string,
+  period: SummaryPeriod = "daily",
+): Promise<DailySummary> {
+  const data = await api.get<{ summary: DailySummary }>(
+    `/sales/daily-summary?period=${period}`,
+    token,
+  );
   return data.summary;
 }
 

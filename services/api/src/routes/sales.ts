@@ -23,11 +23,11 @@ import {
 import { getDb } from "../db";
 import type { Database } from "@repo/database";
 import {
-  endOfToday,
+  buildSummaryTrend,
+  getSummaryPeriodRange,
   multiplyLineTotal,
   roundMoney,
   roundQuantity,
-  startOfToday,
   todayDateKey,
 } from "../lib/money";
 import { rateForUnit, sameFamily } from "../lib/units";
@@ -831,13 +831,22 @@ salesRoutes.post("/", async (c) => {
   });
 });
 
+const VALID_SUMMARY_PERIODS = ["hourly", "daily", "weekly", "monthly", "yearly"] as const;
+
 salesRoutes.get("/daily-summary", async (c) => {
   const tenantId = c.get("tenantId");
   const branchId = c.get("branchId");
   const db = getDb();
 
-  const todayStart = startOfToday();
-  const todayEnd = endOfToday();
+  // Optional ?period= query param — defaults to "daily" so existing
+  // callers (e.g. the counter-app, which only ever shows today's summary)
+  // keep working unchanged.
+  const requestedPeriod = c.req.query("period");
+  const period = (VALID_SUMMARY_PERIODS as readonly string[]).includes(requestedPeriod ?? "")
+    ? (requestedPeriod as (typeof VALID_SUMMARY_PERIODS)[number])
+    : "daily";
+
+  const { start: todayStart, end: todayEnd, dateKey, rangeLabel } = getSummaryPeriodRange(period);
 
   const todaySales = await db
     .select()
@@ -939,10 +948,12 @@ salesRoutes.get("/daily-summary", async (c) => {
     modifiersByTransactionId.set(row.transactionId, list);
   }
 
-  const summaryDateKey = todayDateKey();
   return c.json({
     summary: {
-      date: `${summaryDateKey.slice(0, 4)}-${summaryDateKey.slice(4, 6)}-${summaryDateKey.slice(6, 8)}`,
+      date: dateKey,
+      period,
+      rangeLabel,
+      trend: buildSummaryTrend(period, todayStart, todayEnd, todaySales),
       totalRevenue: roundMoney(totalRevenue),
       transactionCount: todaySales.length,
       avgOrderValue: todaySales.length > 0 ? roundMoney(totalRevenue / todaySales.length) : "0.00",
