@@ -577,12 +577,10 @@ export type ReceiptTemplatePresetId =
   | "classic"
   | "modern"
   | "branded"
-  | "compliance"
   | "custom";
 
 export interface ReceiptTemplateConfig {
   presetId: ReceiptTemplatePresetId;
-  taxComplianceMode: boolean;
   blocks: ReceiptBlock[];
 }
 
@@ -593,7 +591,6 @@ export interface ReceiptTemplate {
   // has no override of its own).
   branchId: string | null;
   presetId: ReceiptTemplatePresetId;
-  taxComplianceMode: boolean;
   config: ReceiptTemplateConfig;
   updatedAt: string;
 }

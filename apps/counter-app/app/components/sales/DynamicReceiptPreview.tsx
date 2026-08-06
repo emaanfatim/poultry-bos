@@ -493,7 +493,7 @@ export function DynamicReceiptPreview({
               }`}
             >
               <span>{t.pos.total}</span>
-              <span className="text-emerald-700">{formatCurrency(transaction.total, symbol)}</span>
+              <span className="text-[#2b2418]">{formatCurrency(transaction.total, symbol)}</span>
             </div>
           </div>
         );
@@ -554,7 +554,7 @@ export function DynamicReceiptPreview({
 
       <div
         id="receipt-print"
-        className="space-y-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm print:border-0 print:shadow-none"
+        className="space-y-3 rounded-2xl border border-[#e4dcc8] bg-[#faf7ef] p-6 shadow-sm print:border-0 print:shadow-none"
       >
         {template.config.blocks.map(renderBlock)}
       </div>

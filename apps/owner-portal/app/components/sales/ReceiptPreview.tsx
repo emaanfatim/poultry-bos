@@ -261,7 +261,7 @@ export function ReceiptPreview({ transaction, onPrint, onClose }: ReceiptPreview
     <div className="mx-auto max-w-lg">
       <div
         id="receipt-print"
-        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm print:border-0 print:shadow-none"
+        className="rounded-2xl border border-[#e4dcc8] bg-[#faf7ef] p-6 shadow-sm print:border-0 print:shadow-none"
       >
         {/* Business header */}
         <div className="border-b border-dashed border-slate-300 pb-4 text-center">
@@ -440,7 +440,7 @@ export function ReceiptPreview({ transaction, onPrint, onClose }: ReceiptPreview
               }`}
             >
               <span>Total</span>
-              <span className="text-emerald-700">{formatCurrency(transaction.total, symbol)}</span>
+              <span className="text-[#2b2418]">{formatCurrency(transaction.total, symbol)}</span>
             </div>
           </div>
         )}

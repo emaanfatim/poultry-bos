@@ -55,7 +55,6 @@ receiptTemplateRoutes.get("/resolve", async (c) => {
       tenantId: row.tenantId,
       branchId: row.branchId,
       presetId: row.presetId,
-      taxComplianceMode: row.taxComplianceMode,
       config: row.config,
       updatedAt: row.updatedAt,
     },
@@ -85,7 +84,6 @@ receiptTemplateRoutes.get("/", async (c) => {
       tenantId: row.tenantId,
       branchId: row.branchId,
       presetId: row.presetId,
-      taxComplianceMode: row.taxComplianceMode,
       config: row.config,
       updatedAt: row.updatedAt,
     },
@@ -130,8 +128,7 @@ const receiptBlockSchema = z.object({
 
 const saveSchema = z.object({
   scope: z.enum(["branch", "tenant"]),
-  presetId: z.enum(["minimal", "classic", "modern", "branded", "compliance", "custom"]),
-  taxComplianceMode: z.boolean(),
+  presetId: z.enum(["minimal", "classic", "modern", "branded", "custom"]),
   blocks: z.array(receiptBlockSchema).min(1),
 });
 
@@ -153,7 +150,6 @@ receiptTemplateRoutes.put("/", async (c) => {
 
   const config = {
     presetId: parsed.data.presetId,
-    taxComplianceMode: parsed.data.taxComplianceMode,
     blocks: parsed.data.blocks,
   };
 
@@ -161,7 +157,9 @@ receiptTemplateRoutes.put("/", async (c) => {
     tenantId,
     branchId: targetBranchId,
     presetId: parsed.data.presetId,
-    taxComplianceMode: parsed.data.taxComplianceMode,
+    // Kept in the DB row for backward compatibility with older saved
+    // templates; the designer no longer exposes this setting.
+    taxComplianceMode: false,
     config,
     updatedByUserId: userId,
     updatedAt: new Date(),
@@ -184,7 +182,6 @@ receiptTemplateRoutes.put("/", async (c) => {
       tenantId: row!.tenantId,
       branchId: row!.branchId,
       presetId: row!.presetId,
-      taxComplianceMode: row!.taxComplianceMode,
       config: row!.config,
       updatedAt: row!.updatedAt,
     },

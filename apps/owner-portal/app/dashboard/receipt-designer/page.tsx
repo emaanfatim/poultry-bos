@@ -7,7 +7,6 @@ import { AuthGuard } from "../../components/AuthGuard";
 import { Header } from "../../components/Header";
 import {
   BLOCK_LABELS,
-  LOCKED_IN_COMPLIANCE_MODE,
   RECEIPT_PRESETS,
   buildPresetBlocks,
   newCustomTextBlock,
@@ -36,7 +35,6 @@ function ReceiptDesignerContent() {
   const [scope, setScope] = useState<ReceiptTemplateScope>("branch");
   const [hasBranchOverride, setHasBranchOverride] = useState(false);
   const [presetId, setPresetId] = useState<ReceiptTemplatePresetId>("modern");
-  const [taxComplianceMode, setTaxComplianceMode] = useState(false);
   const [blocks, setBlocks] = useState<ReceiptBlock[]>([]);
   const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -65,7 +63,6 @@ function ReceiptDesignerContent() {
       }
       if (template) {
         setPresetId(template.presetId);
-        setTaxComplianceMode(template.taxComplianceMode);
         setBlocks(template.config.blocks);
       } else if (nextScope === "branch") {
         // No branch override — check the tenant default so the designer
@@ -73,16 +70,13 @@ function ReceiptDesignerContent() {
         const tenantTemplate = await fetchReceiptTemplate(token, "tenant");
         if (tenantTemplate) {
           setPresetId(tenantTemplate.presetId);
-          setTaxComplianceMode(tenantTemplate.taxComplianceMode);
           setBlocks(tenantTemplate.config.blocks);
         } else {
           setPresetId("modern");
-          setTaxComplianceMode(false);
           setBlocks(buildPresetBlocks("modern"));
         }
       } else {
         setPresetId("modern");
-        setTaxComplianceMode(false);
         setBlocks(buildPresetBlocks("modern"));
       }
     } catch (e) {
@@ -101,7 +95,6 @@ function ReceiptDesignerContent() {
   function applyPreset(id: ReceiptTemplatePresetId) {
     setPresetId(id);
     setBlocks(buildPresetBlocks(id));
-    setTaxComplianceMode(id === "compliance");
     setExpandedBlockId(null);
     setNotice(`Loaded "${RECEIPT_PRESETS.find((p) => p.id === id)?.name}" preset template`);
     setTimeout(() => setNotice(""), 4000);
@@ -111,14 +104,8 @@ function ReceiptDesignerContent() {
     if (presetId !== "custom") setPresetId("custom");
   }
 
-  function isLocked(type: ReceiptBlockType) {
-    return taxComplianceMode && LOCKED_IN_COMPLIANCE_MODE.includes(type);
-  }
-
   function toggleVisible(blockId: string) {
-    setBlocks((prev) =>
-      prev.map((b) => (b.id === blockId && !isLocked(b.type) ? { ...b, visible: !b.visible } : b)),
-    );
+    setBlocks((prev) => prev.map((b) => (b.id === blockId ? { ...b, visible: !b.visible } : b)));
     markCustom();
   }
 
@@ -168,7 +155,6 @@ function ReceiptDesignerContent() {
       const saved = await saveReceiptTemplate(token, {
         scope,
         presetId,
-        taxComplianceMode,
         blocks,
       });
       setPresetId(saved.presetId);
@@ -248,18 +234,6 @@ function ReceiptDesignerContent() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
-              <span className="text-slate-600">Tax Compliance Mode</span>
-              <input
-                type="checkbox"
-                checked={taxComplianceMode}
-                onChange={(e) => {
-                  setTaxComplianceMode(e.target.checked);
-                  markCustom();
-                }}
-                className="h-4 w-4 accent-emerald-600"
-              />
-            </label>
             <button
               type="button"
               onClick={handleReset}
@@ -325,7 +299,7 @@ function ReceiptDesignerContent() {
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
             Select starter receipt template preset ({RECEIPT_PRESETS.length} options)
           </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {RECEIPT_PRESETS.map((preset) => (
               <button
                 key={preset.id}
@@ -378,7 +352,6 @@ function ReceiptDesignerContent() {
           ) : (
             <div className="space-y-2">
               {blocks.map((block) => {
-                const locked = isLocked(block.type);
                 return (
                   <div
                     key={block.id}
@@ -397,19 +370,13 @@ function ReceiptDesignerContent() {
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-slate-900">
                           {BLOCK_LABELS[block.type]}
-                          {locked && (
-                            <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-slate-500">
-                              Locked
-                            </span>
-                          )}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => toggleVisible(block.id)}
-                        disabled={locked}
                         title={block.visible ? "Visible" : "Hidden"}
-                        className={`rounded-lg border px-2.5 py-1.5 text-sm disabled:opacity-40 ${
+                        className={`rounded-lg border px-2.5 py-1.5 text-sm ${
                           block.visible
                             ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                             : "border-slate-200 text-slate-400"
@@ -429,8 +396,7 @@ function ReceiptDesignerContent() {
                       <button
                         type="button"
                         onClick={() => removeBlock(block.id)}
-                        disabled={locked}
-                        className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                        className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-400 hover:bg-red-50 hover:text-red-600"
                       >
                         🗑
                       </button>
@@ -465,8 +431,8 @@ function ReceiptDesignerContent() {
               MONOSPACE ESC/POS
             </span>
           </div>
-          <div className="flex justify-center bg-slate-100 p-4">
-            <pre className="w-[340px] overflow-x-auto whitespace-pre bg-white p-4 font-mono text-[11px] leading-[1.35] text-slate-900 shadow-md">
+          <div className="flex justify-center bg-[#ece7dc] p-4">
+            <pre className="w-[340px] overflow-x-auto whitespace-pre rounded-sm bg-[#faf7ef] p-4 font-mono text-[11px] leading-[1.35] text-[#3d3527] shadow-md">
               {previewLines.join("\n")}
             </pre>
           </div>
@@ -524,19 +490,32 @@ function BlockConfigPanel({
 
       {textFieldTypes.includes(block.type) && (
         <div className="flex flex-wrap items-center gap-4">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Alignment</label>
-            <select
-              value={block.align ?? "center"}
-              onChange={(e) =>
-                onChange({ align: e.target.value as "left" | "center" | "right" })
-              }
-              className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-            >
-              <option value="left">Left</option>
-              <option value="center">Center</option>
-              <option value="right">Right</option>
-            </select>
+          <div className="w-full sm:w-auto">
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+              Alignment
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {(
+                [
+                  ["left", "Left"],
+                  ["center", "Center"],
+                  ["right", "Right"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => onChange({ align: value })}
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    (block.align ?? "center") === value
+                      ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
           <label className="mt-4 flex items-center gap-2 text-sm text-slate-600">
             <input

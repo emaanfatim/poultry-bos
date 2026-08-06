@@ -10,7 +10,7 @@ export interface ReceiptPresetMeta {
   description: string;
 }
 
-// Matches the 5 starter cards in the designer. "custom" isn't one of
+// Matches the 4 starter cards in the designer. "custom" isn't one of
 // these — it's the presetId a template gets stamped with once the owner
 // edits away from a starter (see markCustom() below).
 export const RECEIPT_PRESETS: ReceiptPresetMeta[] = [
@@ -34,11 +34,6 @@ export const RECEIPT_PRESETS: ReceiptPresetMeta[] = [
     name: "Branded",
     description: "Prominent 1-bit mono logo bitmap header with custom promo tags",
   },
-  {
-    id: "compliance",
-    name: "Compliance (Tax Regime)",
-    description: "Official tax authority invoice format with locked fiscal blocks",
-  },
 ];
 
 // Human labels + short helper copy shown in the block architecture list.
@@ -55,15 +50,6 @@ export const BLOCK_LABELS: Record<ReceiptBlockType, string> = {
   footer_message: "Footer Message",
   custom_text: "Custom Text",
 };
-
-// Block kinds that a Tax-Compliance-mode template can't hide or remove —
-// the fiscal minimum a receipt needs to stay valid.
-export const LOCKED_IN_COMPLIANCE_MODE: ReceiptBlockType[] = [
-  "business_name",
-  "order_metadata",
-  "items_list",
-  "totals",
-];
 
 function id() {
   return `blk_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
@@ -127,37 +113,6 @@ export function buildPresetBlocks(presetId: ReceiptTemplatePresetId): ReceiptBlo
           type: "footer_message",
           visible: true,
           text: "Thank you — see you again soon!",
-          align: "center",
-        },
-      ];
-
-    case "compliance":
-      return [
-        { id: id(), type: "business_name", visible: true, align: "center", bold: true },
-        { id: id(), type: "subtitle", visible: true, align: "center" },
-        { id: id(), type: "divider", visible: true, style: "solid" },
-        { id: id(), type: "order_metadata", visible: true, metadataFields: metadataFields() },
-        { id: id(), type: "divider", visible: true, style: "solid" },
-        { id: id(), type: "items_list", visible: true, showModifiers: true },
-        { id: id(), type: "divider", visible: true, style: "solid" },
-        {
-          id: id(),
-          type: "totals",
-          visible: true,
-          showTaxBreakdown: true,
-        },
-        {
-          id: id(),
-          type: "payment_info",
-          visible: true,
-          showPaymentMethod: true,
-        },
-        { id: id(), type: "notes", visible: true },
-        {
-          id: id(),
-          type: "footer_message",
-          visible: true,
-          text: "This is a computer-generated fiscal invoice.",
           align: "center",
         },
       ];

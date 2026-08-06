@@ -1052,11 +1052,11 @@ export const receiptTemplates = pgTable(
     // no override of its own.
     branchId: uuid("branch_id").references(() => branches.id),
     // Which starter preset this was based on ("minimal" | "classic" |
-    // "modern" | "branded" | "compliance" | "custom") — display-only, lets
-    // the designer UI show which card is selected.
+    // "modern" | "branded" | "custom") — display-only, lets the designer UI
+    // show which card is selected.
     presetId: text("preset_id").notNull().default("modern"),
-    // When true, the counter-app enforces the locked compliance layout
-    // (fiscal blocks can't be hidden/reordered) rather than the freeform one.
+    // Retired: tax-compliance-mode locking was removed from the designer.
+    // Column kept (always false) so we don't need a destructive migration.
     taxComplianceMode: boolean("tax_compliance_mode").notNull().default(false),
     // Full block-list config: [{ id, type, visible, ...block-specific
     // fields }]. Kept as jsonb rather than normalized tables since the
