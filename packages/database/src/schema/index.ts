@@ -1034,3 +1034,39 @@ export const userBranchViewAccess = pgTable(
     uniqueIndex("user_branch_view_access_user_branch_idx").on(table.userId, table.branchId),
   ],
 );
+
+// Receipt Designer — one row per (tenant, branch) scope. branchId = null is
+// the tenant-wide default; a non-null branchId is a branch-specific
+// override. At most one row should ever exist per scope (enforced in the
+// API layer, not a DB constraint, since Postgres unique indexes treat NULL
+// as distinct and a plain unique index can't collapse multiple
+// branchId=NULL rows to one on its own).
+export const receiptTemplates = pgTable(
+  "receipt_templates",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    // null = tenant-wide default template, applied to any branch that has
+    // no override of its own.
+    branchId: uuid("branch_id").references(() => branches.id),
+    // Which starter preset this was based on ("minimal" | "classic" |
+    // "modern" | "branded" | "compliance" | "custom") — display-only, lets
+    // the designer UI show which card is selected.
+    presetId: text("preset_id").notNull().default("modern"),
+    // When true, the counter-app enforces the locked compliance layout
+    // (fiscal blocks can't be hidden/reordered) rather than the freeform one.
+    taxComplianceMode: boolean("tax_compliance_mode").notNull().default(false),
+    // Full block-list config: [{ id, type, visible, ...block-specific
+    // fields }]. Kept as jsonb rather than normalized tables since the
+    // block shape is still evolving and is always read/written as a whole.
+    config: jsonb("config").notNull(),
+    updatedByUserId: uuid("updated_by_user_id").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("receipt_templates_tenant_branch_idx").on(table.tenantId, table.branchId),
+  ],
+);

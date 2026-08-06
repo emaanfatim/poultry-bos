@@ -519,3 +519,81 @@ export interface CashierTillSettings {
   canReceiveHandover: boolean;
   reportsToId?: string | null;
 }
+
+// ─── Receipt Designer ──────────────────────────────────────────────────────
+
+// The fixed catalog of block kinds the designer can arrange. "divider" and
+// "custom_text" may appear more than once in a template; every other kind
+// is expected at most once (the UI doesn't enforce this — an extra one is
+// simply rendered again).
+export type ReceiptBlockType =
+  | "business_name"
+  | "subtitle"
+  | "divider"
+  | "order_metadata"
+  | "items_list"
+  | "totals"
+  | "payment_info"
+  | "customer_info"
+  | "notes"
+  | "footer_message"
+  | "custom_text";
+
+export type ReceiptTextAlign = "left" | "center" | "right";
+
+export interface ReceiptOrderMetadataFields {
+  showTicketNumber: boolean;
+  showInvoiceNumber: boolean;
+  showDateTime: boolean;
+  showCashier: boolean;
+  showTable: boolean;
+}
+
+export interface ReceiptBlock {
+  id: string;
+  type: ReceiptBlockType;
+  visible: boolean;
+  // custom_text / business_name / subtitle / footer_message
+  text?: string;
+  align?: ReceiptTextAlign;
+  bold?: boolean;
+  // divider
+  style?: "solid" | "dashed" | "double";
+  // order_metadata
+  metadataFields?: ReceiptOrderMetadataFields;
+  // items_list
+  showModifiers?: boolean;
+  // totals
+  showTaxBreakdown?: boolean;
+  // payment_info
+  showPaymentMethod?: boolean;
+  // customer_info
+  showCustomerName?: boolean;
+  showCustomerPhone?: boolean;
+}
+
+export type ReceiptTemplatePresetId =
+  | "minimal"
+  | "classic"
+  | "modern"
+  | "branded"
+  | "compliance"
+  | "custom";
+
+export interface ReceiptTemplateConfig {
+  presetId: ReceiptTemplatePresetId;
+  taxComplianceMode: boolean;
+  blocks: ReceiptBlock[];
+}
+
+export interface ReceiptTemplate {
+  id: string;
+  tenantId: string;
+  // null = this is the tenant-wide default (applies to every branch that
+  // has no override of its own).
+  branchId: string | null;
+  presetId: ReceiptTemplatePresetId;
+  taxComplianceMode: boolean;
+  config: ReceiptTemplateConfig;
+  updatedAt: string;
+}

@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import type { Transaction } from "@repo/types";
+import type { ReceiptTemplate, Transaction } from "@repo/types";
 import { AuthGuard } from "../../components/common/AuthGuard";
 import { Header } from "../../components/common/Header";
 import { ReceiptPreview } from "../../components/sales/ReceiptPreview";
+import { DynamicReceiptPreview } from "../../components/sales/DynamicReceiptPreview";
 import { useAuth } from "../../providers/AuthProvider";
 import { useI18n } from "../../providers/I18nProvider";
 import { fetchTransaction } from "../../services/sales";
+import { fetchResolvedReceiptTemplate } from "../../services/receiptTemplates";
 import Link from "next/link";
 
 export default function ReceiptPage() {
@@ -17,12 +19,21 @@ export default function ReceiptPage() {
   const { token } = useAuth();
   const { t } = useI18n();
   const [transaction, setTransaction] = useState<Transaction | null>(null);
+  const [template, setTemplate] = useState<ReceiptTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!token || !params.id) return;
-    fetchTransaction(token, params.id)
-      .then(setTransaction)
+    Promise.all([
+      fetchTransaction(token, params.id),
+      // A template fetch failure shouldn't block the receipt itself —
+      // just fall back to the built-in layout.
+      fetchResolvedReceiptTemplate(token).catch(() => null),
+    ])
+      .then(([txn, tmpl]) => {
+        setTransaction(txn);
+        setTemplate(tmpl);
+      })
       .finally(() => setIsLoading(false));
   }, [token, params.id]);
 
@@ -34,11 +45,20 @@ export default function ReceiptPage() {
           {isLoading && <p className="text-center">{t.common.loading}</p>}
           {transaction && (
             <>
-              <ReceiptPreview
-                transaction={transaction}
-                onPrint={() => window.print()}
-                onNewSale={() => router.push("/pos")}
-              />
+              {template ? (
+                <DynamicReceiptPreview
+                  transaction={transaction}
+                  template={template}
+                  onPrint={() => window.print()}
+                  onNewSale={() => router.push("/pos")}
+                />
+              ) : (
+                <ReceiptPreview
+                  transaction={transaction}
+                  onPrint={() => window.print()}
+                  onNewSale={() => router.push("/pos")}
+                />
+              )}
               {/* Kitchen ticket link — shown below receipt actions, visible to
                   any staff member who needs to hand a slip to the kitchen */}
               <div className="mx-auto mt-3 max-w-lg print:hidden">

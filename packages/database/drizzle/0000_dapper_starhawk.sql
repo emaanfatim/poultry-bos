@@ -218,6 +218,18 @@ CREATE TABLE "quotations" (
 	"converted_to_transaction_id" uuid
 );
 --> statement-breakpoint
+CREATE TABLE "receipt_templates" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tenant_id" uuid NOT NULL,
+	"branch_id" uuid,
+	"preset_id" text DEFAULT 'modern' NOT NULL,
+	"tax_compliance_mode" boolean DEFAULT false NOT NULL,
+	"config" jsonb NOT NULL,
+	"updated_by_user_id" uuid,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "tenants" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
@@ -435,6 +447,9 @@ ALTER TABLE "quotations" ADD CONSTRAINT "quotations_tenant_id_tenants_id_fk" FOR
 ALTER TABLE "quotations" ADD CONSTRAINT "quotations_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "quotations" ADD CONSTRAINT "quotations_created_by_user_id_users_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "quotations" ADD CONSTRAINT "quotations_converted_to_transaction_id_transactions_id_fk" FOREIGN KEY ("converted_to_transaction_id") REFERENCES "public"."transactions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "receipt_templates" ADD CONSTRAINT "receipt_templates_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "receipt_templates" ADD CONSTRAINT "receipt_templates_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "receipt_templates" ADD CONSTRAINT "receipt_templates_updated_by_user_id_users_id_fk" FOREIGN KEY ("updated_by_user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "till_denomination_counts" ADD CONSTRAINT "till_denomination_counts_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "till_denomination_counts" ADD CONSTRAINT "till_denomination_counts_till_session_id_till_sessions_id_fk" FOREIGN KEY ("till_session_id") REFERENCES "public"."till_sessions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "till_denomination_counts" ADD CONSTRAINT "till_denomination_counts_denomination_id_currency_denominations_id_fk" FOREIGN KEY ("denomination_id") REFERENCES "public"."currency_denominations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -484,6 +499,7 @@ CREATE UNIQUE INDEX "product_modifier_groups_product_group_idx" ON "product_modi
 CREATE UNIQUE INDEX "product_sub_categories_tenant_token_idx" ON "product_sub_categories" USING btree ("tenant_id","token");--> statement-breakpoint
 CREATE UNIQUE INDEX "product_units_product_unit_idx" ON "product_units" USING btree ("product_id","unit_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "products_tenant_token_idx" ON "products" USING btree ("tenant_id","token");--> statement-breakpoint
+CREATE INDEX "receipt_templates_tenant_branch_idx" ON "receipt_templates" USING btree ("tenant_id","branch_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "till_denomination_counts_session_denom_type_idx" ON "till_denomination_counts" USING btree ("till_session_id","denomination_id","count_type");--> statement-breakpoint
 CREATE UNIQUE INDEX "till_sessions_one_open_per_user_idx" ON "till_sessions" USING btree ("user_id") WHERE "till_sessions"."status" = 'open';--> statement-breakpoint
 CREATE INDEX "transaction_charge_lines_transaction_idx" ON "transaction_charge_lines" USING btree ("transaction_id");--> statement-breakpoint
