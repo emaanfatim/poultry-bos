@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { DragEvent } from "react";
 import type { ModifierGroup, Product, Unit } from "@repo/types";
 import { useAuth } from "../../providers/AuthProvider";
 import { AuthGuard } from "../../components/AuthGuard";
@@ -79,9 +80,11 @@ function ProductsPageContent() {
 
   // Image upload for the "new product" form
   const [formImageUploading, setFormImageUploading] = useState(false);
+  const [formImageDragOver, setFormImageDragOver] = useState(false);
 
   // Per-product photo replace, keyed by product id
   const [photoUploadingId, setPhotoUploadingId] = useState<string | null>(null);
+  const [photoDragOverId, setPhotoDragOverId] = useState<string | null>(null);
 
   // Inline "editing sellable units" state, keyed by product id
   const [unitsEdits, setUnitsEdits] = useState<Record<string, string[]>>({});
@@ -118,6 +121,23 @@ function ProductsPageContent() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  // Without this, dropping a file anywhere on the page that ISN'T one of
+  // our designated drop zones makes Chrome navigate the whole tab to that
+  // file/image instead of just ignoring the drop — easy to trigger by
+  // missing a small target by a pixel. This neutralizes that everywhere on
+  // this page, so a near-miss just does nothing instead of nuking the tab.
+  useEffect(() => {
+    function preventDefault(e: globalThis.DragEvent) {
+      e.preventDefault();
+    }
+    window.addEventListener("dragover", preventDefault);
+    window.addEventListener("drop", preventDefault);
+    return () => {
+      window.removeEventListener("dragover", preventDefault);
+      window.removeEventListener("drop", preventDefault);
+    };
+  }, []);
 
   const selectedCategory = useMemo(
     () => categories.find((c) => c.id === form.categoryId),
@@ -219,6 +239,13 @@ function ProductsPageContent() {
     }
   }
 
+  function handleFormImageDrop(e: DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setFormImageDragOver(false);
+    if (formImageUploading) return;
+    void handleFormImagePick(e.dataTransfer.files?.[0]);
+  }
+
   // ─── Edit price ──────────────────────────────────────────────────────────
 
   function startEditPrice(product: Product) {
@@ -289,6 +316,13 @@ function ProductsPageContent() {
     } finally {
       setPhotoUploadingId(null);
     }
+  }
+
+  function handleProductImageDrop(product: Product, e: DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setPhotoDragOverId(null);
+    if (photoUploadingId) return;
+    void handleProductImagePick(product, e.dataTransfer.files?.[0]);
   }
 
   // ─── Edit sellable units ─────────────────────────────────────────────────
@@ -574,20 +608,36 @@ function ProductsPageContent() {
                 <label className="mb-1 block text-xs font-medium text-slate-500">
                   Photo (optional)
                 </label>
-                <div className="flex items-center gap-3">
-                  {form.imageKey ? (
-                    <img
-                      src={form.imageKey}
-                      alt=""
-                      className="h-16 w-16 rounded-lg border border-slate-200 object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-slate-300 text-xs text-slate-400">
-                      No photo
-                    </div>
-                  )}
-                  <label className="cursor-pointer rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50">
-                    {formImageUploading ? "Processing…" : form.imageKey ? "Change photo" : "Upload photo"}
+                <div className="flex items-start gap-3">
+                  <label
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setFormImageDragOver(true);
+                    }}
+                    onDragLeave={() => setFormImageDragOver(false)}
+                    onDrop={handleFormImageDrop}
+                    className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-4 text-center transition-colors ${
+                      formImageDragOver
+                        ? "border-emerald-400 bg-emerald-50"
+                        : "border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/40"
+                    }`}
+                  >
+                    {form.imageKey ? (
+                      <img
+                        src={form.imageKey}
+                        alt=""
+                        className="h-16 w-16 rounded-lg border border-slate-200 object-cover"
+                      />
+                    ) : (
+                      <span className="text-xl">🖼</span>
+                    )}
+                    <span className="text-xs font-medium text-slate-600">
+                      {formImageUploading
+                        ? "Processing…"
+                        : form.imageKey
+                          ? "Drag & drop or click to replace"
+                          : "Drag & drop or click to upload"}
+                    </span>
                     <input
                       type="file"
                       accept="image/*"
@@ -600,7 +650,7 @@ function ProductsPageContent() {
                     <button
                       type="button"
                       onClick={() => updateForm({ imageKey: null })}
-                      className="text-xs text-slate-400 hover:text-red-600"
+                      className="mt-1 text-xs text-slate-400 hover:text-red-600"
                     >
                       Remove
                     </button>
@@ -662,26 +712,49 @@ function ProductsPageContent() {
                   return (
                     <li key={p.id} className="px-5 py-3">
                       <div className="flex items-center justify-between gap-3">
-                        <div className="flex min-w-0 items-center gap-3">
-                          {p.imageKey ? (
-                            <img
-                              src={p.imageKey}
-                              alt=""
-                              className="h-10 w-10 shrink-0 rounded-lg border border-slate-200 object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-dashed border-slate-200 text-[10px] text-slate-300">
-                              No photo
-                            </div>
-                          )}
+                        <div className="flex min-w-0 items-center gap-2">
                           <label
-                            className={`cursor-pointer text-[10px] font-medium ${
-                              photoUploadingId === p.id
-                                ? "text-slate-300"
-                                : "text-emerald-600 hover:text-emerald-700"
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              setPhotoDragOverId(p.id);
+                            }}
+                            onDragLeave={() =>
+                              setPhotoDragOverId((cur) => (cur === p.id ? null : cur))
+                            }
+                            onDrop={(e) => handleProductImageDrop(p, e)}
+                            className={`-m-2 flex cursor-pointer items-center gap-1.5 rounded-lg p-2 transition-colors ${
+                              photoDragOverId === p.id ? "bg-emerald-50 ring-2 ring-emerald-300" : ""
                             }`}
+                            title="Drag & drop or click to change photo"
                           >
-                            {photoUploadingId === p.id ? "…" : "Edit"}
+                            <div
+                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border object-cover transition-colors ${
+                                photoDragOverId === p.id
+                                  ? "border-2 border-dashed border-emerald-400 bg-emerald-50"
+                                  : p.imageKey
+                                    ? "border-slate-200"
+                                    : "border-dashed border-slate-200 text-[10px] text-slate-300"
+                              }`}
+                            >
+                              {p.imageKey ? (
+                                <img
+                                  src={p.imageKey}
+                                  alt=""
+                                  className="h-10 w-10 rounded-lg object-cover"
+                                />
+                              ) : (
+                                "No photo"
+                              )}
+                            </div>
+                            <span
+                              className={`text-[10px] font-medium ${
+                                photoUploadingId === p.id
+                                  ? "text-slate-300"
+                                  : "text-emerald-600 hover:text-emerald-700"
+                              }`}
+                            >
+                              {photoUploadingId === p.id ? "…" : "Edit"}
+                            </span>
                             <input
                               type="file"
                               accept="image/*"

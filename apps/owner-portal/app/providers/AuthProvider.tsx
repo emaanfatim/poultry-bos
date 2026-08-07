@@ -31,6 +31,10 @@ interface AuthContextValue {
   sessionExpired: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  // Patches the locally-held tenant/branch after an out-of-band update
+  // (e.g. the Receipt Designer's business-profile save) so the rest of the
+  // app reflects the new address/phone/branch name without a re-login.
+  updateProfile: (patch: { tenant?: Partial<TenantConfig>; branch?: Partial<SessionData["branch"]> }) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -107,6 +111,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSessionExpired(false);
   }, []);
 
+  const updateProfile = useCallback<AuthContextValue["updateProfile"]>((patch) => {
+    setSession((prev) => {
+      if (!prev) return prev;
+      const next: SessionData = {
+        ...prev,
+        tenant: patch.tenant ? { ...prev.tenant, ...patch.tenant } : prev.tenant,
+        branch: patch.branch ? { ...prev.branch, ...patch.branch } : prev.branch,
+      };
+      saveSession(next);
+      return next;
+    });
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       token: session?.token ?? null,
@@ -118,8 +135,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionExpired,
       login,
       logout,
+      updateProfile,
     }),
-    [session, isLoading, sessionExpired, login, logout],
+    [session, isLoading, sessionExpired, login, logout, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

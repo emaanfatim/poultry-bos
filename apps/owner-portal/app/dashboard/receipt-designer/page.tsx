@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { DragEvent } from "react";
-import type { ReceiptBlock, ReceiptBlockType, ReceiptTemplatePresetId } from "@repo/types";
+import type { ReceiptBlock, ReceiptBlockType, ReceiptTemplatePresetId, TenantConfig } from "@repo/types";
 import { useAuth } from "../../providers/AuthProvider";
 import { AuthGuard } from "../../components/AuthGuard";
 import { Header } from "../../components/Header";
@@ -23,6 +23,7 @@ import {
   type ReceiptTemplateScope,
 } from "../../services/receiptTemplates";
 import { fetchProducts } from "../../services/products";
+import { updateBusinessProfile } from "../../services/businessProfile";
 import { buildThermalPreviewLines, SAMPLE_RECEIPT_DATA, type PreviewLineItem } from "./thermalPreview";
 
 export default function ReceiptDesignerPage() {
@@ -35,7 +36,7 @@ export default function ReceiptDesignerPage() {
 }
 
 function ReceiptDesignerContent() {
-  const { token, user, tenant, branch } = useAuth();
+  const { token, user, tenant, branch, updateProfile } = useAuth();
 
   const [scope, setScope] = useState<ReceiptTemplateScope>("branch");
   const [hasBranchOverride, setHasBranchOverride] = useState(false);
@@ -530,6 +531,10 @@ function ReceiptDesignerContent() {
                         onChange={(patch) => updateBlock(block.id, patch)}
                         onLogoFile={(file) => handleLogoFile(block.id, file)}
                         logoUploading={logoUploadingId === block.id}
+                        token={token}
+                        tenant={tenant}
+                        branch={branch}
+                        onProfileUpdated={updateProfile}
                       />
                     )}
                   </div>
@@ -576,11 +581,22 @@ function BlockConfigPanel({
   onChange,
   onLogoFile,
   logoUploading,
+  token,
+  tenant,
+  branch,
+  onProfileUpdated,
 }: {
   block: ReceiptBlock;
   onChange: (patch: Partial<ReceiptBlock>) => void;
   onLogoFile: (file: File | undefined) => void;
   logoUploading: boolean;
+  token: string | null;
+  tenant: TenantConfig | null;
+  branch: { id: string; name: string; token: string } | null;
+  onProfileUpdated: (patch: {
+    tenant?: Partial<TenantConfig>;
+    branch?: Partial<{ id: string; name: string; token: string }>;
+  }) => void;
 }) {
   const textFieldTypes: ReceiptBlockType[] = [
     "business_name",
@@ -686,6 +702,15 @@ function BlockConfigPanel({
             </label>
           ))}
         </div>
+      )}
+
+      {block.type === "subtitle" && (
+        <BusinessProfileFields
+          token={token}
+          tenant={tenant}
+          branch={branch}
+          onProfileUpdated={onProfileUpdated}
+        />
       )}
 
       {block.type === "divider" && (
@@ -799,6 +824,133 @@ function BlockConfigPanel({
           Shows the order's notes field when the transaction has one — no extra options.
         </p>
       )}
+    </div>
+  );
+}
+
+// ─── Subtitle block: edit the actual business address/phone/branch name ───
+// There's no separate Business Settings screen in the app — this is the
+// only place an owner can change these values, so the subtitle block
+// doubles as that editor. Saves go straight to the tenant/branch records
+// (not the receipt template config) via PUT /business-profile.
+
+function BusinessProfileFields({
+  token,
+  tenant,
+  branch,
+  onProfileUpdated,
+}: {
+  token: string | null;
+  tenant: TenantConfig | null;
+  branch: { id: string; name: string; token: string } | null;
+  onProfileUpdated: (patch: {
+    tenant?: Partial<TenantConfig>;
+    branch?: Partial<{ id: string; name: string; token: string }>;
+  }) => void;
+}) {
+  const [address, setAddress] = useState(tenant?.address ?? "");
+  const [phone, setPhone] = useState(tenant?.phone ?? "");
+  const [branchName, setBranchName] = useState(branch?.name ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setAddress(tenant?.address ?? "");
+  }, [tenant?.address]);
+  useEffect(() => {
+    setPhone(tenant?.phone ?? "");
+  }, [tenant?.phone]);
+  useEffect(() => {
+    setBranchName(branch?.name ?? "");
+  }, [branch?.name]);
+
+  const dirty =
+    address !== (tenant?.address ?? "") ||
+    phone !== (tenant?.phone ?? "") ||
+    branchName.trim() !== (branch?.name ?? "");
+
+  const handleSave = async () => {
+    if (!token) return;
+    if (!branchName.trim()) {
+      setError("Branch name can't be empty");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    setSaved(false);
+    try {
+      const result = await updateBusinessProfile(token, {
+        address: address.trim() === "" ? null : address.trim(),
+        phone: phone.trim() === "" ? null : phone.trim(),
+        branchName: branchName.trim(),
+      });
+      onProfileUpdated({ tenant: result.tenant, branch: result.branch });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
+      <p className="text-xs font-medium text-slate-600">
+        Actual values (used wherever the toggles above are on — there's no separate
+        settings page for these yet, so they're edited right here)
+      </p>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div>
+          <label className="mb-1 block text-[11px] font-medium text-slate-500">
+            Business address
+          </label>
+          <input
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="e.g. Shop 12, Poultry Market, Karachi"
+            className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-[11px] font-medium text-slate-500">
+            Business phone
+          </label>
+          <input
+            type="text"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="e.g. 0300 1234567"
+            className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-[11px] font-medium text-slate-500">
+            Branch name
+          </label>
+          <input
+            type="text"
+            value={branchName}
+            onChange={(e) => setBranchName(e.target.value)}
+            placeholder="e.g. Main Branch"
+            className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm"
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!dirty || saving}
+          className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {saving ? "Saving…" : "Save business info"}
+        </button>
+        {saved && <span className="text-xs text-emerald-600">Saved</span>}
+        {error && <span className="text-xs text-red-600">{error}</span>}
+      </div>
     </div>
   );
 }

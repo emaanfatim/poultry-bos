@@ -20,6 +20,7 @@ import { discountSettingsRoutes } from "./routes/discount-settings.js";
 import { tillSettingsRoutes } from "./routes/till-settings.js";
 import { modifierGroupRoutes } from "./routes/modifier-groups.js";
 import { receiptTemplateRoutes } from "./routes/receipt-templates.js";
+import { businessProfileRoutes } from "./routes/business-profile.js";
 
 
 dotenv.config({
@@ -65,6 +66,7 @@ app.route("/discount-settings", discountSettingsRoutes);
 app.route("/till-settings", tillSettingsRoutes);
 app.route("/modifier-groups", modifierGroupRoutes);
 app.route("/receipt-templates", receiptTemplateRoutes);
+app.route("/business-profile", businessProfileRoutes);
 
 const port = Number(process.env.PORT ?? 4000);
 
