@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "../providers/AuthProvider";
+import { SettingsPanel } from "./SettingsPanel";
 
 export function Header() {
   const { user, tenant, branch, logout } = useAuth();
@@ -21,8 +22,8 @@ export function Header() {
         href={href}
         className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
           active
-            ? "bg-emerald-600 text-white"
-            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+            : "text-[var(--muted-foreground)] hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
         }`}
       >
         {label}
@@ -31,11 +32,13 @@ export function Header() {
   };
 
   return (
-    <header className="border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
+    <header className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-sm">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-bold text-slate-900">Owner Portal</h1>
-          <p className="text-xs text-slate-500">
+          <h1 className="text-lg font-bold text-[var(--foreground)]">
+            Owner Portal
+          </h1>
+          <p className="text-xs text-[var(--muted-foreground)]">
             {tenant?.name} · {branch?.name}
           </p>
         </div>
@@ -53,13 +56,14 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <span className="hidden text-sm text-slate-600 sm:inline">
+          <span className="hidden text-sm text-[var(--foreground)] sm:inline">
             {user?.displayName}
           </span>
+          <SettingsPanel />
           <button
             type="button"
             onClick={handleLogout}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+            className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--surface-2)]"
           >
             Log out
           </button>

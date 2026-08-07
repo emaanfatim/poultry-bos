@@ -16,8 +16,8 @@ export function AuthGuard({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-slate-50">
-        <p className="text-slate-600">Loading…</p>
+      <div className="flex min-h-dvh items-center justify-center bg-[var(--background)]">
+        <p className="text-[var(--muted-foreground)]">Loading…</p>
       </div>
     );
   }
@@ -39,8 +39,8 @@ export function GuestGuard({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-slate-50">
-        <p className="text-slate-600">Loading…</p>
+      <div className="flex min-h-dvh items-center justify-center bg-[var(--background)]">
+        <p className="text-[var(--muted-foreground)]">Loading…</p>
       </div>
     );
   }
