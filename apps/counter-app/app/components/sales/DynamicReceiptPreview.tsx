@@ -103,6 +103,17 @@ export function DynamicReceiptPreview({
       if (!block.visible) continue;
 
       switch (block.type) {
+        case "logo_header":
+          // This minimal PDF writer draws text only (no image embedding),
+          // so the logo prints as a labeled placeholder here — the on-screen
+          // receipt and the printed HTML receipt (window.print()) both show
+          // the actual uploaded image.
+          if (block.imageKey) {
+            pdf.text("[ Business Logo ]", pageWidth / 2, 9, "center");
+            pdf.advance(16);
+          }
+          break;
+
         case "business_name":
           pdf.text(block.text || tenant?.name || "Business", pageWidth / 2, 16, "center");
           pdf.advance(20);
@@ -294,6 +305,20 @@ export function DynamicReceiptPreview({
     if (!block.visible) return null;
 
     switch (block.type) {
+      case "logo_header":
+        if (!block.imageKey) return null;
+        return (
+          <div
+            key={block.id}
+            className={`flex ${
+              block.align === "left" ? "justify-start" : block.align === "right" ? "justify-end" : "justify-center"
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- receipt logo is a stored data URL, not a static asset */}
+            <img src={block.imageKey} alt="Business logo" className="max-h-16 max-w-[220px] object-contain" />
+          </div>
+        );
+
       case "business_name":
         return (
           <h2

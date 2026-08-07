@@ -41,6 +41,46 @@ export async function fileToProductImage(file: File): Promise<string> {
   return dataUrl;
 }
 
+// Same "no cloud storage, store a compressed data URL" approach as
+// fileToProductImage, tuned for a receipt logo instead of a product photo:
+// smaller max dimension (it only ever prints a couple centimeters wide on
+// an 80mm receipt) and PNG output so a transparent logo stays transparent
+// on the receipt's paper-cream background instead of picking up a JPEG
+// white matte.
+const LOGO_MAX_DIMENSION = 320;
+
+export async function fileToLogoImage(file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) {
+    throw new ImageProcessingError("Please choose an image file.");
+  }
+
+  const bitmap = await loadBitmap(file);
+
+  let { width, height } = bitmap;
+  if (width > LOGO_MAX_DIMENSION || height > LOGO_MAX_DIMENSION) {
+    const scale = LOGO_MAX_DIMENSION / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new ImageProcessingError("Couldn't process this image on this browser.");
+  }
+  ctx.drawImage(bitmap, 0, 0, width, height);
+
+  const dataUrl = canvas.toDataURL("image/png");
+
+  if (dataUrl.length > 1_500_000) {
+    throw new ImageProcessingError("Logo is too large even after compression — try a smaller image.");
+  }
+
+  return dataUrl;
+}
+
 async function loadBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {
   if ("createImageBitmap" in window) {
     try {

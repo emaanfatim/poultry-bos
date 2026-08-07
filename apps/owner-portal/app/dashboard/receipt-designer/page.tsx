@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { DragEvent } from "react";
 import type { ReceiptBlock, ReceiptBlockType, ReceiptTemplatePresetId } from "@repo/types";
 import { useAuth } from "../../providers/AuthProvider";
 import { AuthGuard } from "../../components/AuthGuard";
 import { Header } from "../../components/Header";
+import { fileToLogoImage, ImageProcessingError } from "../../lib/image";
 import {
   BLOCK_LABELS,
   RECEIPT_PRESETS,
   buildPresetBlocks,
   newCustomTextBlock,
   newDividerBlock,
+  newLogoHeaderBlock,
 } from "../../lib/receiptPresets";
 import {
   clearBranchReceiptTemplate,
@@ -18,7 +21,8 @@ import {
   saveReceiptTemplate,
   type ReceiptTemplateScope,
 } from "../../services/receiptTemplates";
-import { buildThermalPreviewLines, SAMPLE_RECEIPT_DATA } from "./thermalPreview";
+import { fetchProducts } from "../../services/products";
+import { buildThermalPreviewLines, SAMPLE_RECEIPT_DATA, type PreviewLineItem } from "./thermalPreview";
 
 export default function ReceiptDesignerPage() {
   return (
@@ -38,11 +42,45 @@ function ReceiptDesignerContent() {
   const [blocks, setBlocks] = useState<ReceiptBlock[]>([]);
   const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [logoUploadingId, setLogoUploadingId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+
+  // Remembers the blocks you were editing under each preset during this
+  // session, so hopping between preset cards (Minimal/Classic/etc.) to
+  // compare them doesn't throw away work you did on any of them — and so
+  // clicking back onto a preset you already customized (e.g. uploaded a
+  // logo onto "Branded") brings that customization back instead of
+  // resetting to the preset's bare factory defaults.
+  const [presetSessionCache, setPresetSessionCache] = useState<
+    Partial<Record<ReceiptTemplatePresetId, ReceiptBlock[]>>
+  >({});
+
+  // Real inventory items, pulled in so the hardware preview shows what this
+  // business actually sells instead of the fixed sample dishes.
+  const [previewItems, setPreviewItems] = useState<PreviewLineItem[]>([]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetchProducts(token)
+      .then((products) => {
+        const active = products.filter((p) => p.status === "active");
+        const qtyCycle = [1, 4, 2];
+        setPreviewItems(
+          active.slice(0, 3).map((p, idx) => ({
+            name: p.name,
+            qty: qtyCycle[idx % qtyCycle.length] ?? 1,
+            rate: parseFloat(p.currentPrice) || 0,
+          })),
+        );
+      })
+      // The preview quietly falls back to sample data if this fails —
+      // it's illustrative only, not worth surfacing an error banner for.
+      .catch(() => setPreviewItems([]));
+  }, [token]);
 
   if (user?.role !== "owner") {
     return (
@@ -64,6 +102,7 @@ function ReceiptDesignerContent() {
       if (template) {
         setPresetId(template.presetId);
         setBlocks(template.config.blocks);
+        setPresetSessionCache((prev) => ({ ...prev, [template.presetId]: template.config.blocks }));
       } else if (nextScope === "branch") {
         // No branch override — check the tenant default so the designer
         // starts from what's actually printing today, not a blank slate.
@@ -71,6 +110,10 @@ function ReceiptDesignerContent() {
         if (tenantTemplate) {
           setPresetId(tenantTemplate.presetId);
           setBlocks(tenantTemplate.config.blocks);
+          setPresetSessionCache((prev) => ({
+            ...prev,
+            [tenantTemplate.presetId]: tenantTemplate.config.blocks,
+          }));
         } else {
           setPresetId("modern");
           setBlocks(buildPresetBlocks("modern"));
@@ -89,47 +132,75 @@ function ReceiptDesignerContent() {
   useEffect(() => {
     loadForScope(scope);
     setExpandedBlockId(null);
+    setPresetSessionCache({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, scope]);
 
   function applyPreset(id: ReceiptTemplatePresetId) {
-    setPresetId(id);
-    setBlocks(buildPresetBlocks(id));
-    setExpandedBlockId(null);
-    setNotice(`Loaded "${RECEIPT_PRESETS.find((p) => p.id === id)?.name}" preset template`);
-    setTimeout(() => setNotice(""), 4000);
-  }
+    if (id === presetId) return;
+    // Stash what you've got under the preset you're leaving, so switching
+    // back to it later (even without saving) brings your edits back rather
+    // than resetting to bare factory defaults.
+    setPresetSessionCache((prev) => ({ ...prev, [presetId]: blocks }));
 
-  function markCustom() {
-    if (presetId !== "custom") setPresetId("custom");
+    // If you've already customized this preset earlier in this session
+    // (e.g. uploaded a logo onto "Branded", then looked at "Classic", then
+    // came back), restore that instead of wiping it out again.
+    const cached = presetSessionCache[id];
+    setPresetId(id);
+    setBlocks(cached ?? buildPresetBlocks(id));
+    setExpandedBlockId(null);
+    setNotice(
+      cached
+        ? `Restored your "${RECEIPT_PRESETS.find((p) => p.id === id)?.name}" customization`
+        : `Loaded "${RECEIPT_PRESETS.find((p) => p.id === id)?.name}" preset template`,
+    );
+    setTimeout(() => setNotice(""), 4000);
   }
 
   function toggleVisible(blockId: string) {
     setBlocks((prev) => prev.map((b) => (b.id === blockId ? { ...b, visible: !b.visible } : b)));
-    markCustom();
   }
 
   function removeBlock(blockId: string) {
     setBlocks((prev) => prev.filter((b) => b.id !== blockId));
     if (expandedBlockId === blockId) setExpandedBlockId(null);
-    markCustom();
   }
 
   function updateBlock(blockId: string, patch: Partial<ReceiptBlock>) {
     setBlocks((prev) => prev.map((b) => (b.id === blockId ? { ...b, ...patch } : b)));
-    markCustom();
   }
 
   function addDivider() {
     setBlocks((prev) => [...prev, newDividerBlock()]);
-    markCustom();
   }
 
   function addCustomText() {
     const block = newCustomTextBlock();
     setBlocks((prev) => [...prev, block]);
     setExpandedBlockId(block.id);
-    markCustom();
+  }
+
+  function addLogoHeader() {
+    const block = newLogoHeaderBlock();
+    setBlocks((prev) => [block, ...prev]);
+    setExpandedBlockId(block.id);
+  }
+
+  const hasLogoBlock = blocks.some((b) => b.type === "logo_header");
+
+  async function handleLogoFile(blockId: string, file: File | undefined) {
+    if (!file) return;
+    setLogoUploadingId(blockId);
+    setError("");
+    try {
+      const dataUrl = await fileToLogoImage(file);
+      updateBlock(blockId, { imageKey: dataUrl });
+    } catch (e: unknown) {
+      setError(e instanceof ImageProcessingError ? e.message : "Failed to process logo image");
+    } finally {
+      setLogoUploadingId(null);
+    }
   }
 
   function handleDrop(targetId: string) {
@@ -143,7 +214,6 @@ function ReceiptDesignerContent() {
       next.splice(to, 0, moved!);
       return next;
     });
-    markCustom();
     setDragId(null);
   }
 
@@ -158,6 +228,7 @@ function ReceiptDesignerContent() {
         blocks,
       });
       setPresetId(saved.presetId);
+      setPresetSessionCache((prev) => ({ ...prev, [saved.presetId]: saved.config.blocks }));
       if (scope === "branch") setHasBranchOverride(true);
       setNotice("Receipt template saved");
       setTimeout(() => setNotice(""), 4000);
@@ -191,15 +262,19 @@ function ReceiptDesignerContent() {
 
   const previewLines = useMemo(
     () =>
-      buildThermalPreviewLines(blocks, {
-        businessName: tenant?.name ?? "Your Business Name",
-        address: tenant?.address ?? undefined,
-        phone: tenant?.phone ?? undefined,
-        branchName: branch?.name ?? undefined,
-        cashierName: user?.displayName ?? "Cashier",
-        currencySymbol: tenant?.currencySymbol ?? "Rs",
-      }),
-    [blocks, tenant, branch, user],
+      buildThermalPreviewLines(
+        blocks,
+        {
+          businessName: tenant?.name ?? "Your Business Name",
+          address: tenant?.address ?? undefined,
+          phone: tenant?.phone ?? undefined,
+          branchName: branch?.name ?? undefined,
+          cashierName: user?.displayName ?? "Cashier",
+          currencySymbol: tenant?.currencySymbol ?? "Rs",
+        },
+        previewItems,
+      ),
+    [blocks, tenant, branch, user, previewItems],
   );
 
   return (
@@ -330,6 +405,15 @@ function ReceiptDesignerContent() {
               Receipt block architecture ({blocks.length} blocks)
             </p>
             <div className="flex gap-2">
+              {!hasLogoBlock && (
+                <button
+                  type="button"
+                  onClick={addLogoHeader}
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  + Add Logo
+                </button>
+              )}
               <button
                 type="button"
                 onClick={addCustomText}
@@ -372,6 +456,27 @@ function ReceiptDesignerContent() {
                           {BLOCK_LABELS[block.type]}
                         </p>
                       </div>
+                      {block.type === "logo_header" && (
+                        <label
+                          className={`cursor-pointer rounded-lg border px-2.5 py-1.5 text-xs font-medium ${
+                            logoUploadingId === block.id
+                              ? "border-slate-200 text-slate-400"
+                              : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                          }`}
+                        >
+                          🖼 {logoUploadingId === block.id ? "Uploading…" : "Upload Logo"}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={logoUploadingId === block.id}
+                            onChange={(e) => {
+                              void handleLogoFile(block.id, e.target.files?.[0]);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                      )}
                       <button
                         type="button"
                         onClick={() => toggleVisible(block.id)}
@@ -391,7 +496,7 @@ function ReceiptDesignerContent() {
                         }
                         className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
                       >
-                        Configure
+                        {expandedBlockId === block.id ? "Done" : "Configure"}
                       </button>
                       <button
                         type="button"
@@ -406,6 +511,8 @@ function ReceiptDesignerContent() {
                       <BlockConfigPanel
                         block={block}
                         onChange={(patch) => updateBlock(block.id, patch)}
+                        onLogoFile={(file) => handleLogoFile(block.id, file)}
+                        logoUploading={logoUploadingId === block.id}
                       />
                     )}
                   </div>
@@ -450,9 +557,13 @@ function ReceiptDesignerContent() {
 function BlockConfigPanel({
   block,
   onChange,
+  onLogoFile,
+  logoUploading,
 }: {
   block: ReceiptBlock;
   onChange: (patch: Partial<ReceiptBlock>) => void;
+  onLogoFile: (file: File | undefined) => void;
+  logoUploading: boolean;
 }) {
   const textFieldTypes: ReceiptBlockType[] = [
     "business_name",
@@ -463,6 +574,15 @@ function BlockConfigPanel({
 
   return (
     <div className="border-t border-slate-100 bg-slate-50 px-4 py-3">
+      {block.type === "logo_header" && (
+        <LogoBlockFields
+          block={block}
+          onChange={onChange}
+          onLogoFile={onLogoFile}
+          uploading={logoUploading}
+        />
+      )}
+
       {textFieldTypes.includes(block.type) && (
         <div className="mb-3">
           <label className="mb-1 block text-xs font-medium text-slate-600">
@@ -644,6 +764,118 @@ function BlockConfigPanel({
           Shows the order's notes field when the transaction has one — no extra options.
         </p>
       )}
+    </div>
+  );
+}
+
+// ─── Logo block: drag-and-drop upload + printer alignment ─────────────────
+
+function LogoBlockFields({
+  block,
+  onChange,
+  onLogoFile,
+  uploading,
+}: {
+  block: ReceiptBlock;
+  onChange: (patch: Partial<ReceiptBlock>) => void;
+  onLogoFile: (file: File | undefined) => void;
+  uploading: boolean;
+}) {
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  function handleDrop(e: DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    onLogoFile(e.dataTransfer.files?.[0]);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="mb-1 block text-xs font-medium text-slate-600">Logo image</label>
+        <label
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDraggingOver(true);
+          }}
+          onDragLeave={() => setIsDraggingOver(false)}
+          onDrop={handleDrop}
+          className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${
+            isDraggingOver
+              ? "border-emerald-400 bg-emerald-50"
+              : "border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/40"
+          }`}
+        >
+          {block.imageKey ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element -- data URL preview, not a static asset */}
+              <img
+                src={block.imageKey}
+                alt="Logo preview"
+                className="max-h-16 max-w-[200px] object-contain"
+              />
+              <span className="text-xs font-medium text-emerald-700">
+                {uploading ? "Uploading…" : "Drag & drop or click to replace"}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="text-2xl">🖼</span>
+              <span className="text-sm font-medium text-slate-600">
+                {uploading ? "Uploading…" : "Drag & drop your logo here, or click to upload"}
+              </span>
+              <span className="text-xs text-slate-400">PNG or JPG recommended, resized automatically</span>
+            </>
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              onLogoFile(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+        </label>
+        {block.imageKey && (
+          <button
+            type="button"
+            onClick={() => onChange({ imageKey: null })}
+            className="mt-2 text-xs text-red-600 underline hover:text-red-700"
+          >
+            Remove logo
+          </button>
+        )}
+      </div>
+
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Printer hardware alignment
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {(
+            [
+              ["left", "Left"],
+              ["center", "Center"],
+              ["right", "Right"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onChange({ align: value })}
+              className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                (block.align ?? "center") === value
+                  ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                  : "border-slate-200 text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

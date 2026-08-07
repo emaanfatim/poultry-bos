@@ -11,8 +11,10 @@ export interface ReceiptPresetMeta {
 }
 
 // Matches the 4 starter cards in the designer. "custom" isn't one of
-// these — it's the presetId a template gets stamped with once the owner
-// edits away from a starter (see markCustom() below).
+// these — it's not auto-applied anymore; editing a preset's blocks keeps
+// that preset's card highlighted (see the Receipt Designer page), so
+// "custom" only ever shows up on older saved templates from before that
+// behavior changed.
 export const RECEIPT_PRESETS: ReceiptPresetMeta[] = [
   {
     id: "minimal",
@@ -38,6 +40,7 @@ export const RECEIPT_PRESETS: ReceiptPresetMeta[] = [
 
 // Human labels + short helper copy shown in the block architecture list.
 export const BLOCK_LABELS: Record<ReceiptBlockType, string> = {
+  logo_header: "Logo Header",
   business_name: "Business Name",
   subtitle: "Subtitle",
   divider: "Divider",
@@ -92,6 +95,7 @@ export function buildPresetBlocks(presetId: ReceiptTemplatePresetId): ReceiptBlo
 
     case "branded":
       return [
+        { id: id(), type: "logo_header", visible: true, align: "center", imageKey: null },
         { id: id(), type: "business_name", visible: true, align: "center", bold: true },
         { id: id(), type: "subtitle", visible: true, align: "center" },
         { id: id(), type: "divider", visible: true, style: "double" },
@@ -151,6 +155,10 @@ export function buildPresetBlocks(presetId: ReceiptTemplatePresetId): ReceiptBlo
 
 export function newDividerBlock(): ReceiptBlock {
   return { id: id(), type: "divider", visible: true, style: "solid" };
+}
+
+export function newLogoHeaderBlock(): ReceiptBlock {
+  return { id: id(), type: "logo_header", visible: true, align: "center", imageKey: null };
 }
 
 export function newCustomTextBlock(): ReceiptBlock {

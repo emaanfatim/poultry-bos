@@ -527,6 +527,7 @@ export interface CashierTillSettings {
 // is expected at most once (the UI doesn't enforce this — an extra one is
 // simply rendered again).
 export type ReceiptBlockType =
+  | "logo_header"
   | "business_name"
   | "subtitle"
   | "divider"
@@ -570,6 +571,10 @@ export interface ReceiptBlock {
   // customer_info
   showCustomerName?: boolean;
   showCustomerPhone?: boolean;
+  // logo_header — compressed data URL (e.g. "data:image/png;base64,..."),
+  // same storage approach as product photos (see lib/image.ts). null/undefined
+  // means no logo has been uploaded yet, in which case the block renders nothing.
+  imageKey?: string | null;
 }
 
 export type ReceiptTemplatePresetId =

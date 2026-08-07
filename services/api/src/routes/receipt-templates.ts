@@ -93,6 +93,7 @@ receiptTemplateRoutes.get("/", async (c) => {
 const receiptBlockSchema = z.object({
   id: z.string().min(1),
   type: z.enum([
+    "logo_header",
     "business_name",
     "subtitle",
     "divider",
@@ -124,6 +125,9 @@ const receiptBlockSchema = z.object({
   showPaymentMethod: z.boolean().optional(),
   showCustomerName: z.boolean().optional(),
   showCustomerPhone: z.boolean().optional(),
+  // logo_header — data URL string, or null once removed. Capped generously;
+  // the client compresses to well under this before ever sending it.
+  imageKey: z.string().max(2_000_000).nullable().optional(),
 });
 
 const saveSchema = z.object({

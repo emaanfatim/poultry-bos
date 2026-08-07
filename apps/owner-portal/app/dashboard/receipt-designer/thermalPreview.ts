@@ -30,6 +30,26 @@ interface PreviewContext {
   currencySymbol: string;
 }
 
+// A real item pulled from the tenant's product catalog, used to make the
+// preview's items/totals reflect what's actually being sold instead of the
+// fixed sample dish names below.
+export interface PreviewLineItem {
+  name: string;
+  qty: number;
+  rate: number;
+}
+
+function buildPreviewTotals(items: PreviewLineItem[]) {
+  const subtotal = items.reduce((sum, item) => sum + item.qty * item.rate, 0);
+  const discountPct = 10;
+  const discountAmount = subtotal * (discountPct / 100);
+  // Matches the ~16% GST ratio the static sample data used, just derived
+  // dynamically now so it scales with whatever items are shown.
+  const taxAmount = (subtotal - discountAmount) * 0.16;
+  const grandTotal = subtotal - discountAmount + taxAmount;
+  return { subtotal, discountPct, discountAmount, taxAmount, grandTotal };
+}
+
 function money(ctx: PreviewContext, amount: number) {
   return `${ctx.currencySymbol} ${amount.toLocaleString(undefined, {
     minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
@@ -64,14 +84,36 @@ function ruleChar(style?: "solid" | "dashed" | "double") {
   return "-".repeat(WIDTH);
 }
 
-export function buildThermalPreviewLines(blocks: ReceiptBlock[], ctx: PreviewContext): string[] {
+export function buildThermalPreviewLines(
+  blocks: ReceiptBlock[],
+  ctx: PreviewContext,
+  // Real products from the current inventory, when available — shown
+  // instead of the hardcoded sample dishes so the preview reflects what
+  // this business actually sells. Falls back to the sample data when the
+  // catalog hasn't loaded yet or has nothing in it.
+  inventoryItems?: PreviewLineItem[],
+): string[] {
   const lines: string[] = [];
   const d = SAMPLE_RECEIPT_DATA;
+  const items: PreviewLineItem[] =
+    inventoryItems && inventoryItems.length > 0
+      ? inventoryItems
+      : d.items.map((item) => ({ name: item.name, qty: parseInt(item.qty, 10) || 1, rate: item.rate }));
+  const totals = buildPreviewTotals(items);
 
   for (const block of blocks) {
     if (!block.visible) continue;
 
     switch (block.type) {
+      case "logo_header":
+        // The hardware preview is plain monospace text — an actual bitmap
+        // can't render here, so show a placeholder in the chosen slot.
+        // The real printed/HTML receipt renders the uploaded image itself.
+        if (block.imageKey) {
+          lines.push(alignedLine("[ LOGO ]", block.align ?? "center"));
+        }
+        break;
+
       case "business_name":
         lines.push(alignedLine((block.text || ctx.businessName).toUpperCase(), block.align ?? "center"));
         break;
@@ -116,22 +158,22 @@ export function buildThermalPreviewLines(blocks: ReceiptBlock[], ctx: PreviewCon
 
       case "items_list":
         lines.push(twoCol("QTY ITEM", "AMOUNT"));
-        for (const item of d.items) {
-          lines.push(twoCol(`${item.qty} ${item.name}`, money(ctx, item.total)));
+        for (const item of items) {
+          lines.push(twoCol(`${item.qty}x ${item.name}`, money(ctx, item.qty * item.rate)));
         }
         break;
 
       case "totals":
         lines.push(ruleChar("dashed"));
-        lines.push(twoCol("Subtotal", money(ctx, d.subtotal)));
-        lines.push(twoCol(`Discount (${d.discountPct}%)`, `-${money(ctx, d.discountAmount)}`));
+        lines.push(twoCol("Subtotal", money(ctx, totals.subtotal)));
+        lines.push(twoCol(`Discount (${totals.discountPct}%)`, `-${money(ctx, totals.discountAmount)}`));
         if (block.showTaxBreakdown ?? false) {
-          lines.push(twoCol(d.taxLabel, money(ctx, d.taxAmount)));
+          lines.push(twoCol(d.taxLabel, money(ctx, totals.taxAmount)));
         } else {
-          lines.push(twoCol("Tax & Charges", money(ctx, d.taxAmount)));
+          lines.push(twoCol("Tax & Charges", money(ctx, totals.taxAmount)));
         }
         lines.push(ruleChar("solid"));
-        lines.push(twoCol("GRAND TOTAL", money(ctx, d.grandTotal)));
+        lines.push(twoCol("GRAND TOTAL", money(ctx, totals.grandTotal)));
         break;
 
       case "payment_info":
