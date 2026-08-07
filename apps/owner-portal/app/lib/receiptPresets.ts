@@ -24,17 +24,17 @@ export const RECEIPT_PRESETS: ReceiptPresetMeta[] = [
   {
     id: "classic",
     name: "Classic",
-    description: "Traditional full-service restaurant receipt layout",
+    description: "Full business details, itemized notes, and a plain-text footer",
   },
   {
     id: "modern",
     name: "Modern",
-    description: "Bold high-impact header with prominent daily ticket callout & QR",
+    description: "Bold centered header, itemized tax breakdown, no clutter below the total",
   },
   {
     id: "branded",
     name: "Branded",
-    description: "Prominent 1-bit mono logo bitmap header with custom promo tags",
+    description: "Logo header, double-rule dividers, and a custom promo line",
   },
 ];
 
@@ -60,27 +60,22 @@ function id() {
 
 function metadataFields(overrides: Partial<ReceiptBlock["metadataFields"]> = {}) {
   return {
-    showTicketNumber: true,
     showInvoiceNumber: true,
     showDateTime: true,
     showCashier: true,
-    showTable: true,
     ...overrides,
   };
 }
 
 export function buildPresetBlocks(presetId: ReceiptTemplatePresetId): ReceiptBlock[] {
   switch (presetId) {
+    // Compact: no subtitle/address block at all, single solid dividers,
+    // combined tax line, short footer. Built for fast takeaway counters.
     case "minimal":
       return [
         { id: id(), type: "business_name", visible: true, align: "center", bold: true },
         { id: id(), type: "divider", visible: true, style: "solid" },
-        {
-          id: id(),
-          type: "order_metadata",
-          visible: true,
-          metadataFields: metadataFields({ showTicketNumber: false, showTable: false }),
-        },
+        { id: id(), type: "order_metadata", visible: true, metadataFields: metadataFields() },
         { id: id(), type: "items_list", visible: true, showModifiers: true },
         { id: id(), type: "divider", visible: true, style: "solid" },
         { id: id(), type: "totals", visible: true, showTaxBreakdown: false },
@@ -93,14 +88,75 @@ export function buildPresetBlocks(presetId: ReceiptTemplatePresetId): ReceiptBlo
         },
       ];
 
+    // Traditional layout: full business details (address, phone, branch),
+    // customer info, an itemized breakdown, and room for order notes.
+    case "classic":
+      return [
+        { id: id(), type: "business_name", visible: true, align: "center", bold: false },
+        {
+          id: id(),
+          type: "subtitle",
+          visible: true,
+          align: "center",
+          showAddress: true,
+          showPhone: true,
+          showBranchName: true,
+        },
+        { id: id(), type: "divider", visible: true, style: "solid" },
+        { id: id(), type: "order_metadata", visible: true, metadataFields: metadataFields() },
+        { id: id(), type: "customer_info", visible: true, showCustomerName: true, showCustomerPhone: true },
+        { id: id(), type: "divider", visible: true, style: "solid" },
+        { id: id(), type: "items_list", visible: true, showModifiers: true },
+        { id: id(), type: "divider", visible: true, style: "solid" },
+        { id: id(), type: "totals", visible: true, showTaxBreakdown: true },
+        { id: id(), type: "payment_info", visible: true, showPaymentMethod: true },
+        { id: id(), type: "notes", visible: true },
+        {
+          id: id(),
+          type: "footer_message",
+          visible: true,
+          text: "Thank you for your visit!",
+          align: "center",
+        },
+      ];
+
+    // Bold centered header, no address/branch clutter under the name,
+    // dashed dividers, and nothing below the grand total — a shorter,
+    // punchier receipt than Classic.
+    case "modern":
+      return [
+        { id: id(), type: "business_name", visible: true, align: "center", bold: true },
+        { id: id(), type: "divider", visible: true, style: "dashed" },
+        {
+          id: id(),
+          type: "order_metadata",
+          visible: true,
+          metadataFields: metadataFields({ showCashier: false }),
+        },
+        { id: id(), type: "items_list", visible: true, showModifiers: true },
+        { id: id(), type: "divider", visible: true, style: "dashed" },
+        { id: id(), type: "totals", visible: true, showTaxBreakdown: true },
+        { id: id(), type: "payment_info", visible: true, showPaymentMethod: true },
+      ];
+
+    // Logo-first header, double-rule dividers framing the metadata, and a
+    // custom promo line above the footer.
     case "branded":
       return [
         { id: id(), type: "logo_header", visible: true, align: "center", imageKey: null },
         { id: id(), type: "business_name", visible: true, align: "center", bold: true },
-        { id: id(), type: "subtitle", visible: true, align: "center" },
+        {
+          id: id(),
+          type: "subtitle",
+          visible: true,
+          align: "center",
+          showAddress: true,
+          showPhone: true,
+          showBranchName: true,
+        },
         { id: id(), type: "divider", visible: true, style: "double" },
         { id: id(), type: "order_metadata", visible: true, metadataFields: metadataFields() },
-        { id: id(), type: "divider", visible: true, style: "solid" },
+        { id: id(), type: "divider", visible: true, style: "double" },
         { id: id(), type: "items_list", visible: true, showModifiers: true },
         { id: id(), type: "divider", visible: true, style: "solid" },
         { id: id(), type: "totals", visible: true, showTaxBreakdown: true },
@@ -121,35 +177,9 @@ export function buildPresetBlocks(presetId: ReceiptTemplatePresetId): ReceiptBlo
         },
       ];
 
-    case "classic":
-    case "modern":
     case "custom":
     default:
-      return [
-        {
-          id: id(),
-          type: "business_name",
-          visible: true,
-          align: "center",
-          bold: presetId === "modern",
-        },
-        { id: id(), type: "subtitle", visible: true, align: "center" },
-        { id: id(), type: "divider", visible: true, style: "solid" },
-        { id: id(), type: "order_metadata", visible: true, metadataFields: metadataFields() },
-        { id: id(), type: "divider", visible: true, style: "solid" },
-        { id: id(), type: "items_list", visible: true, showModifiers: true },
-        { id: id(), type: "divider", visible: true, style: "solid" },
-        { id: id(), type: "totals", visible: true, showTaxBreakdown: false },
-        { id: id(), type: "payment_info", visible: true, showPaymentMethod: true },
-        { id: id(), type: "notes", visible: true },
-        {
-          id: id(),
-          type: "footer_message",
-          visible: true,
-          text: "Thank you for your visit!",
-          align: "center",
-        },
-      ];
+      return buildPresetBlocks("classic");
   }
 }
 
@@ -163,4 +193,14 @@ export function newLogoHeaderBlock(): ReceiptBlock {
 
 export function newCustomTextBlock(): ReceiptBlock {
   return { id: id(), type: "custom_text", visible: true, text: "", align: "center" };
+}
+
+export function newCustomerInfoBlock(): ReceiptBlock {
+  return {
+    id: id(),
+    type: "customer_info",
+    visible: true,
+    showCustomerName: true,
+    showCustomerPhone: true,
+  };
 }

@@ -124,15 +124,15 @@ export function DynamicReceiptPreview({
             pdf.text(block.text, pageWidth / 2, 9, "center");
             pdf.advance(12);
           }
-          if (tenant?.address) {
+          if ((block.showAddress ?? true) && tenant?.address) {
             pdf.text(tenant.address, pageWidth / 2, 9, "center");
             pdf.advance(12);
           }
-          if (tenant?.phone) {
+          if ((block.showPhone ?? true) && tenant?.phone) {
             pdf.text(tenant.phone, pageWidth / 2, 9, "center");
             pdf.advance(12);
           }
-          if (branch?.name) {
+          if ((block.showBranchName ?? true) && branch?.name) {
             pdf.text(branch.name, pageWidth / 2, 9, "center");
             pdf.advance(12);
           }
@@ -333,9 +333,11 @@ export function DynamicReceiptPreview({
         return (
           <div key={block.id} className={`mt-1 text-xs text-slate-500 ${alignClass(block.align)}`}>
             {block.text && <p>{block.text}</p>}
-            {tenant?.address && <p>{tenant.address}</p>}
-            {tenant?.phone && <p>{tenant.phone}</p>}
-            {branch?.name && <p className="mt-1 font-medium text-slate-600">{branch.name}</p>}
+            {(block.showAddress ?? true) && tenant?.address && <p>{tenant.address}</p>}
+            {(block.showPhone ?? true) && tenant?.phone && <p>{tenant.phone}</p>}
+            {(block.showBranchName ?? true) && branch?.name && (
+              <p className="mt-1 font-medium text-slate-600">{branch.name}</p>
+            )}
           </div>
         );
 

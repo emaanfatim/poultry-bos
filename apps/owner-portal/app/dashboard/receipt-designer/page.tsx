@@ -12,6 +12,7 @@ import {
   RECEIPT_PRESETS,
   buildPresetBlocks,
   newCustomTextBlock,
+  newCustomerInfoBlock,
   newDividerBlock,
   newLogoHeaderBlock,
 } from "../../lib/receiptPresets";
@@ -187,7 +188,14 @@ function ReceiptDesignerContent() {
     setExpandedBlockId(block.id);
   }
 
+  function addCustomerInfo() {
+    const block = newCustomerInfoBlock();
+    setBlocks((prev) => [...prev, block]);
+    setExpandedBlockId(block.id);
+  }
+
   const hasLogoBlock = blocks.some((b) => b.type === "logo_header");
+  const hasCustomerInfoBlock = blocks.some((b) => b.type === "customer_info");
 
   async function handleLogoFile(blockId: string, file: File | undefined) {
     if (!file) return;
@@ -414,6 +422,15 @@ function ReceiptDesignerContent() {
                   + Add Logo
                 </button>
               )}
+              {!hasCustomerInfoBlock && (
+                <button
+                  type="button"
+                  onClick={addCustomerInfo}
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  + Add Customer Info
+                </button>
+              )}
               <button
                 type="button"
                 onClick={addCustomText}
@@ -544,7 +561,7 @@ function ReceiptDesignerContent() {
             </pre>
           </div>
           <p className="mt-2 text-center text-[11px] text-slate-400">
-            Preview uses sample order data (ticket #{SAMPLE_RECEIPT_DATA.ticketNumber}) — actual receipts pull live order details.
+            Preview uses sample order data (invoice #{SAMPLE_RECEIPT_DATA.invoiceNumber}) — actual receipts pull live order details.
           </p>
         </div>
       </div>
@@ -649,6 +666,28 @@ function BlockConfigPanel({
         </div>
       )}
 
+      {block.type === "subtitle" && (
+        <div className="mt-3 grid grid-cols-1 gap-2 border-t border-slate-200 pt-3 sm:grid-cols-3">
+          {(
+            [
+              ["showAddress", "Business address"],
+              ["showPhone", "Business phone"],
+              ["showBranchName", "Branch name"],
+            ] as const
+          ).map(([key, label]) => (
+            <label key={key} className="flex items-center gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={block[key] ?? true}
+                onChange={(e) => onChange({ [key]: e.target.checked })}
+                className="h-4 w-4 accent-emerald-600"
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+      )}
+
       {block.type === "divider" && (
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Style</label>
@@ -668,11 +707,9 @@ function BlockConfigPanel({
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {(
             [
-              ["showTicketNumber", "Ticket #"],
               ["showInvoiceNumber", "Invoice No."],
               ["showDateTime", "Date & time"],
               ["showCashier", "Cashier"],
-              ["showTable", "Table / dine-in tag"],
             ] as const
           ).map(([key, label]) => (
             <label key={key} className="flex items-center gap-2 text-sm text-slate-600">
@@ -682,11 +719,9 @@ function BlockConfigPanel({
                 onChange={(e) =>
                   onChange({
                     metadataFields: {
-                      showTicketNumber: true,
                       showInvoiceNumber: true,
                       showDateTime: true,
                       showCashier: true,
-                      showTable: true,
                       ...block.metadataFields,
                       [key]: e.target.checked,
                     },

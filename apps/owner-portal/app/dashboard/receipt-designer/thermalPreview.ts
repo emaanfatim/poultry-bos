@@ -3,10 +3,7 @@ import type { ReceiptBlock } from "@repo/types";
 const WIDTH = 48;
 
 export const SAMPLE_RECEIPT_DATA = {
-  ticketNumber: "42",
   invoiceNumber: "INV-10429",
-  table: "T3 (Main Hall)",
-  billTag: "DINE-IN",
   items: [
     { name: "Chicken Karahi (Full)", qty: "1x", rate: 1850, total: 1850 },
     { name: "Rogni Naan", qty: "4x", rate: 80, total: 320 },
@@ -119,9 +116,12 @@ export function buildThermalPreviewLines(
         break;
 
       case "subtitle": {
-        const parts = [block.text || undefined, ctx.branchName].filter(Boolean);
-        const text = parts.length > 0 ? parts.join(" · ") : ctx.address || "";
-        if (text) lines.push(alignedLine(text, block.align ?? "center"));
+        const rows: string[] = [];
+        if (block.text) rows.push(block.text);
+        if ((block.showAddress ?? true) && ctx.address) rows.push(ctx.address);
+        if ((block.showPhone ?? true) && ctx.phone) rows.push(ctx.phone);
+        if ((block.showBranchName ?? true) && ctx.branchName) rows.push(ctx.branchName);
+        for (const row of rows) lines.push(alignedLine(row, block.align ?? "center"));
         break;
       }
 
@@ -131,16 +131,6 @@ export function buildThermalPreviewLines(
 
       case "order_metadata": {
         const f = block.metadataFields;
-        const showTicket = f?.showTicketNumber ?? true;
-        const showTable = f?.showTable ?? true;
-        if (showTicket || showTable) {
-          lines.push(
-            twoCol(
-              showTicket ? `TICKET #${d.ticketNumber}` : "",
-              showTable ? d.billTag : "",
-            ),
-          );
-        }
         if (f?.showInvoiceNumber ?? true) {
           lines.push(twoCol("Invoice No:", d.invoiceNumber));
         }
@@ -149,9 +139,6 @@ export function buildThermalPreviewLines(
         }
         if (f?.showCashier ?? true) {
           lines.push(twoCol("Cashier:", ctx.cashierName));
-        }
-        if (showTable) {
-          lines.push(twoCol("Table:", d.table));
         }
         break;
       }
@@ -167,7 +154,7 @@ export function buildThermalPreviewLines(
         lines.push(ruleChar("dashed"));
         lines.push(twoCol("Subtotal", money(ctx, totals.subtotal)));
         lines.push(twoCol(`Discount (${totals.discountPct}%)`, `-${money(ctx, totals.discountAmount)}`));
-        if (block.showTaxBreakdown ?? false) {
+        if (block.showTaxBreakdown ?? true) {
           lines.push(twoCol(d.taxLabel, money(ctx, totals.taxAmount)));
         } else {
           lines.push(twoCol("Tax & Charges", money(ctx, totals.taxAmount)));
@@ -184,6 +171,7 @@ export function buildThermalPreviewLines(
 
       case "customer_info":
         if (block.showCustomerName ?? true) lines.push(twoCol("Customer:", "Walk-in"));
+        if (block.showCustomerPhone ?? true) lines.push(twoCol("Phone:", "0300-0000000"));
         break;
 
       case "notes":

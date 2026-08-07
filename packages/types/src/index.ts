@@ -543,11 +543,9 @@ export type ReceiptBlockType =
 export type ReceiptTextAlign = "left" | "center" | "right";
 
 export interface ReceiptOrderMetadataFields {
-  showTicketNumber: boolean;
   showInvoiceNumber: boolean;
   showDateTime: boolean;
   showCashier: boolean;
-  showTable: boolean;
 }
 
 export interface ReceiptBlock {
@@ -562,6 +560,12 @@ export interface ReceiptBlock {
   style?: "solid" | "dashed" | "double";
   // order_metadata
   metadataFields?: ReceiptOrderMetadataFields;
+  // subtitle — each defaults to true when unset, so templates saved before
+  // these existed keep behaving exactly as before (address/phone/branch
+  // always shown alongside any override text).
+  showAddress?: boolean;
+  showPhone?: boolean;
+  showBranchName?: boolean;
   // items_list
   showModifiers?: boolean;
   // totals

@@ -113,13 +113,15 @@ const receiptBlockSchema = z.object({
   style: z.enum(["solid", "dashed", "double"]).optional(),
   metadataFields: z
     .object({
-      showTicketNumber: z.boolean(),
       showInvoiceNumber: z.boolean(),
       showDateTime: z.boolean(),
       showCashier: z.boolean(),
-      showTable: z.boolean(),
     })
     .optional(),
+  // subtitle
+  showAddress: z.boolean().optional(),
+  showPhone: z.boolean().optional(),
+  showBranchName: z.boolean().optional(),
   showModifiers: z.boolean().optional(),
   showTaxBreakdown: z.boolean().optional(),
   showPaymentMethod: z.boolean().optional(),
