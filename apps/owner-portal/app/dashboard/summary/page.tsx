@@ -149,7 +149,7 @@ function SalesTrendCard({ summary, symbol }: { summary: DailySummary; symbol: st
               key={idx}
               title={`${point.fullLabel} · ${formatCurrency(value, symbol)}`}
               className={`flex-1 rounded-t ${
-                isBusiest ? "bg-emerald-600" : value > 0 ? "bg-emerald-300" : "bg-slate-100"
+                isBusiest ? "bg-[var(--accent)]" : value > 0 ? "bg-[var(--accent-border)]" : "bg-slate-100"
               }`}
               style={{ height: `${height}%` }}
             />
@@ -222,7 +222,7 @@ function TopItemsCard({ summary, symbol }: { summary: DailySummary; symbol: stri
                 </div>
                 <div className="mt-1 h-1.5 rounded-full bg-slate-100">
                   <div
-                    className="h-1.5 rounded-full bg-emerald-600"
+                    className="h-1.5 rounded-full bg-[var(--accent)]"
                     style={{ width: `${width}%` }}
                   />
                 </div>
@@ -329,7 +329,7 @@ export default function OwnerSummaryPage() {
               aria-pressed={period === option.value}
               className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                 period === option.value
-                  ? "bg-emerald-600 text-white shadow-sm"
+                  ? "bg-[var(--accent)] text-white shadow-sm"
                   : "text-slate-600 hover:bg-white hover:text-slate-900"
               }`}
             >
@@ -347,7 +347,7 @@ export default function OwnerSummaryPage() {
             <div className="mb-6 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <p className="text-sm text-slate-500">Total Revenue</p>
-                <p className="mt-2 text-3xl font-bold text-emerald-700">
+                <p className="mt-2 text-3xl font-bold text-[var(--accent-hover)]">
                   {formatCurrency(summary.totalRevenue, symbol)}
                 </p>
               </div>
@@ -378,7 +378,7 @@ export default function OwnerSummaryPage() {
                     {summary.billTypeBreakdown.priced.count}
                     <span className="ml-2 text-sm font-normal text-slate-400">transactions</span>
                   </p>
-                  <p className="mt-1 text-lg font-semibold text-emerald-700">
+                  <p className="mt-1 text-lg font-semibold text-[var(--accent-hover)]">
                     {formatCurrency(summary.billTypeBreakdown.priced.revenue, symbol)}
                   </p>
                 </div>
@@ -429,7 +429,7 @@ export default function OwnerSummaryPage() {
                           <td className="px-4 py-3 text-end text-slate-600">
                             {row.totalQuantity} {row.unit}
                           </td>
-                          <td className="px-4 py-3 text-end font-semibold text-emerald-700">
+                          <td className="px-4 py-3 text-end font-semibold text-[var(--accent-hover)]">
                             {formatCurrency(row.totalRevenue, symbol)}
                           </td>
                         </tr>
@@ -486,7 +486,7 @@ export default function OwnerSummaryPage() {
                               className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                                 tx.billType === "unpriced"
                                   ? "bg-amber-50 text-amber-700"
-                                  : "bg-emerald-50 text-emerald-700"
+                                  : "bg-[var(--accent-soft)] text-[var(--accent-hover)]"
                               }`}
                             >
                               {tx.billType === "unpriced" ? "Unpriced" : "Priced"}
@@ -571,7 +571,7 @@ export default function OwnerSummaryPage() {
                               onClick={() => openReceipt(tx.id)}
                               title="View Receipt"
                               aria-label="View Receipt"
-                              className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-emerald-700"
+                              className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-[var(--accent-hover)]"
                             >
                               <Eye size={18} />
                             </button>

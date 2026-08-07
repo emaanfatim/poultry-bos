@@ -301,7 +301,7 @@ function ReceiptDesignerContent() {
         </div>
       )}
       {notice && (
-        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <div className="mb-4 rounded-xl border border-[var(--accent-soft-strong)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-hover)]">
           {notice}
         </div>
       )}
@@ -330,7 +330,7 @@ function ReceiptDesignerContent() {
               type="button"
               onClick={handleSave}
               disabled={loading || saving || blocks.length === 0}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-60"
             >
               {saving ? "Saving…" : "💾 Save Receipt Template"}
             </button>
@@ -391,13 +391,13 @@ function ReceiptDesignerContent() {
                 onClick={() => applyPreset(preset.id)}
                 className={`rounded-xl border p-3 text-left transition-colors ${
                   presetId === preset.id
-                    ? "border-emerald-400 bg-emerald-50"
+                    ? "border-[var(--accent-border)] bg-[var(--accent-soft)]"
                     : "border-slate-200 hover:bg-slate-50"
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-slate-900">{preset.name}</span>
-                  {presetId === preset.id && <span className="text-emerald-600">✓</span>}
+                  {presetId === preset.id && <span className="text-[var(--accent)]">✓</span>}
                 </div>
                 <p className="mt-1 text-xs text-slate-500">{preset.description}</p>
               </button>
@@ -479,7 +479,7 @@ function ReceiptDesignerContent() {
                           className={`cursor-pointer rounded-lg border px-2.5 py-1.5 text-xs font-medium ${
                             logoUploadingId === block.id
                               ? "border-slate-200 text-slate-400"
-                              : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              : "border-[var(--accent-soft-strong)] bg-[var(--accent-soft)] text-[var(--accent-hover)] hover:bg-[var(--accent-soft-strong)]"
                           }`}
                         >
                           🖼 {logoUploadingId === block.id ? "Uploading…" : "Upload Logo"}
@@ -501,7 +501,7 @@ function ReceiptDesignerContent() {
                         title={block.visible ? "Visible" : "Hidden"}
                         className={`rounded-lg border px-2.5 py-1.5 text-sm ${
                           block.visible
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                            ? "border-[var(--accent-soft-strong)] bg-[var(--accent-soft)] text-[var(--accent-hover)]"
                             : "border-slate-200 text-slate-400"
                         }`}
                       >
@@ -661,7 +661,7 @@ function BlockConfigPanel({
                   onClick={() => onChange({ align: value })}
                   className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                     (block.align ?? "center") === value
-                      ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                      ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-hover)]"
                       : "border-slate-200 text-slate-600 hover:bg-slate-50"
                   }`}
                 >
@@ -675,7 +675,7 @@ function BlockConfigPanel({
               type="checkbox"
               checked={!!block.bold}
               onChange={(e) => onChange({ bold: e.target.checked })}
-              className="h-4 w-4 accent-emerald-600"
+              className="h-4 w-4 accent-[var(--accent)]"
             />
             Bold
           </label>
@@ -696,7 +696,7 @@ function BlockConfigPanel({
                 type="checkbox"
                 checked={block[key] ?? true}
                 onChange={(e) => onChange({ [key]: e.target.checked })}
-                className="h-4 w-4 accent-emerald-600"
+                className="h-4 w-4 accent-[var(--accent)]"
               />
               {label}
             </label>
@@ -752,7 +752,7 @@ function BlockConfigPanel({
                     },
                   })
                 }
-                className="h-4 w-4 accent-emerald-600"
+                className="h-4 w-4 accent-[var(--accent)]"
               />
               {label}
             </label>
@@ -766,7 +766,7 @@ function BlockConfigPanel({
             type="checkbox"
             checked={block.showModifiers ?? true}
             onChange={(e) => onChange({ showModifiers: e.target.checked })}
-            className="h-4 w-4 accent-emerald-600"
+            className="h-4 w-4 accent-[var(--accent)]"
           />
           Show modifier/extras sub-rows under each item
         </label>
@@ -778,7 +778,7 @@ function BlockConfigPanel({
             type="checkbox"
             checked={block.showTaxBreakdown ?? false}
             onChange={(e) => onChange({ showTaxBreakdown: e.target.checked })}
-            className="h-4 w-4 accent-emerald-600"
+            className="h-4 w-4 accent-[var(--accent)]"
           />
           Show itemized tax/charge breakdown (vs. a single combined line)
         </label>
@@ -790,7 +790,7 @@ function BlockConfigPanel({
             type="checkbox"
             checked={block.showPaymentMethod ?? true}
             onChange={(e) => onChange({ showPaymentMethod: e.target.checked })}
-            className="h-4 w-4 accent-emerald-600"
+            className="h-4 w-4 accent-[var(--accent)]"
           />
           Show payment method
         </label>
@@ -803,7 +803,7 @@ function BlockConfigPanel({
               type="checkbox"
               checked={block.showCustomerName ?? true}
               onChange={(e) => onChange({ showCustomerName: e.target.checked })}
-              className="h-4 w-4 accent-emerald-600"
+              className="h-4 w-4 accent-[var(--accent)]"
             />
             Show customer name
           </label>
@@ -812,7 +812,7 @@ function BlockConfigPanel({
               type="checkbox"
               checked={block.showCustomerPhone ?? true}
               onChange={(e) => onChange({ showCustomerPhone: e.target.checked })}
-              className="h-4 w-4 accent-emerald-600"
+              className="h-4 w-4 accent-[var(--accent)]"
             />
             Show customer phone
           </label>
@@ -948,7 +948,7 @@ function BusinessProfileFields({
         >
           {saving ? "Saving…" : "Save business info"}
         </button>
-        {saved && <span className="text-xs text-emerald-600">Saved</span>}
+        {saved && <span className="text-xs text-[var(--accent)]">Saved</span>}
         {error && <span className="text-xs text-red-600">{error}</span>}
       </div>
     </div>
@@ -989,8 +989,8 @@ function LogoBlockFields({
           onDrop={handleDrop}
           className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${
             isDraggingOver
-              ? "border-emerald-400 bg-emerald-50"
-              : "border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/40"
+              ? "border-[var(--accent-border)] bg-[var(--accent-soft)]"
+              : "border-slate-200 bg-white hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)]/40"
           }`}
         >
           {block.imageKey ? (
@@ -1001,7 +1001,7 @@ function LogoBlockFields({
                 alt="Logo preview"
                 className="max-h-16 max-w-[200px] object-contain"
               />
-              <span className="text-xs font-medium text-emerald-700">
+              <span className="text-xs font-medium text-[var(--accent-hover)]">
                 {uploading ? "Uploading…" : "Drag & drop or click to replace"}
               </span>
             </>
@@ -1054,7 +1054,7 @@ function LogoBlockFields({
               onClick={() => onChange({ align: value })}
               className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                 (block.align ?? "center") === value
-                  ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                  ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-hover)]"
                   : "border-slate-200 text-slate-600 hover:bg-slate-50"
               }`}
             >

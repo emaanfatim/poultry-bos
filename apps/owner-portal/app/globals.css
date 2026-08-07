@@ -83,6 +83,8 @@ html[data-accent="teal"] {
 
 html {
   --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-soft-strong: color-mix(in srgb, var(--accent) 24%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 /* Display density: controls comfortable/compact spacing in chrome such as

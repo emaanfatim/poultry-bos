@@ -88,7 +88,7 @@ function StaffTillContent() {
                 onClick={() => setSelectedId(cashier.id)}
                 className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left transition ${
                   selectedId === cashier.id
-                    ? "border-emerald-500 bg-emerald-50"
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)]"
                     : "border-slate-200 bg-white hover:border-slate-300"
                 }`}
               >
@@ -98,7 +98,7 @@ function StaffTillContent() {
                 </div>
                 <div className="flex items-center gap-1">
                   {cashier.requiresTillToSell && (
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                    <span className="rounded-full bg-[var(--accent-soft-strong)] px-2 py-0.5 text-[10px] font-medium text-[var(--accent-hover)]">
                       ON
                     </span>
                   )}
@@ -190,7 +190,7 @@ function CashierTillPanel({
               type="checkbox"
               checked={requiresTillToSell}
               onChange={(e) => setRequiresTillToSell(e.target.checked)}
-              className="h-5 w-5 shrink-0 accent-emerald-600"
+              className="h-5 w-5 shrink-0 accent-[var(--accent)]"
             />
           </label>
 
@@ -204,7 +204,7 @@ function CashierTillPanel({
               <select
                 value={requiresTillToSellScope}
                 onChange={(e) => setRequiresTillToSellScope(e.target.value as TillGateScope)}
-                className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 sm:w-auto"
+                className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)] sm:w-auto"
               >
                 <option value="priced_cash_only">Priced cash bills only</option>
                 <option value="all_bills">All bills</option>
@@ -219,11 +219,11 @@ function CashierTillPanel({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save changes"}
         </button>
-        {savedMessage && <span className="text-sm font-medium text-emerald-600">Saved ✓</span>}
+        {savedMessage && <span className="text-sm font-medium text-[var(--accent)]">Saved ✓</span>}
       </div>
     </div>
   );

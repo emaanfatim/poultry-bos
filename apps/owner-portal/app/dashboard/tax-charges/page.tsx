@@ -269,7 +269,7 @@ function TaxChargesContent() {
           <button
             type="button"
             onClick={startCreate}
-            className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+            className="rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
           >
             + New Charge Category
           </button>
@@ -477,14 +477,14 @@ function PaymentMethodsPanel({
               placeholder="e.g. Cash, Card, JazzCash"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+              className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
             />
             <label className="flex items-center gap-1.5 text-xs text-slate-600">
               <input
                 type="checkbox"
                 checked={requiresRounding}
                 onChange={(e) => setRequiresRounding(e.target.checked)}
-                className="h-4 w-4 accent-emerald-600"
+                className="h-4 w-4 accent-[var(--accent)]"
               />
               Requires cash rounding
             </label>
@@ -494,7 +494,7 @@ function PaymentMethodsPanel({
                 onChange={(e) =>
                   setRoundingMethod(e.target.value as PaymentMethod["roundingMethod"])
                 }
-                className="rounded-lg border border-slate-200 px-2 py-2 text-xs outline-none focus:border-emerald-400"
+                className="rounded-lg border border-slate-200 px-2 py-2 text-xs outline-none focus:border-[var(--accent-border)]"
               >
                 {(Object.keys(ROUNDING_LABELS) as PaymentMethod["roundingMethod"][]).map((m) => (
                   <option key={m} value={m}>
@@ -606,7 +606,7 @@ function ChargeCategoryFormView({
             placeholder="e.g. GST, Card Fee, Delivery Fee"
             value={form.name}
             onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
           />
         </div>
 
@@ -622,7 +622,7 @@ function ChargeCategoryFormView({
                   e.target.value === "tax" ? false : prev.countsTowardOtherBases,
               }))
             }
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
           >
             {(Object.keys(TYPE_INFO) as ChargeCategoryType[]).map((t) => (
               <option key={t} value={t}>
@@ -644,7 +644,7 @@ function ChargeCategoryFormView({
                   placeholder={firstLine.calculationType === "percentage" ? "e.g. 5" : "e.g. 20"}
                   value={firstLine.value}
                   onChange={(e) => onUpdateRateLine(0, { value: e.target.value })}
-                  className="w-full px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-100"
+                  className="w-full px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                 />
                 <select
                   value={firstLine.calculationType}
@@ -668,7 +668,7 @@ function ChargeCategoryFormView({
                 onChange={(e) =>
                   onUpdateRateLine(0, { scope: e.target.value as ChargeRateLine["scope"] })
                 }
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
               >
                 <option value="whole_bill">The whole bill</option>
                 <option value="per_product">Each item</option>
@@ -686,7 +686,7 @@ function ChargeCategoryFormView({
                     manualSelectionLabel: null,
                   })
                 }
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
               >
                 <option value="payment_method">Paying with a specific method</option>
                 <option value="manual_selection">Cashier picks it manually</option>
@@ -703,7 +703,7 @@ function ChargeCategoryFormView({
                   onChange={(e) =>
                     onUpdateRateLine(0, { conditionPaymentMethodId: e.target.value || null })
                   }
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                 >
                   <option value="">Select payment method…</option>
                   {paymentMethods.map((pm) => (
@@ -727,7 +727,7 @@ function ChargeCategoryFormView({
                   onChange={(e) =>
                     onUpdateRateLine(0, { manualSelectionLabel: e.target.value || null })
                   }
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                 />
               </div>
             )}
@@ -744,7 +744,7 @@ function ChargeCategoryFormView({
                 branchId: e.target.checked ? null : branchId ?? prev.branchId ?? null,
               }))
             }
-            className="h-4 w-4 accent-emerald-600"
+            className="h-4 w-4 accent-[var(--accent)]"
           />
           Apply to every branch
         </label>
@@ -761,7 +761,7 @@ function ChargeCategoryFormView({
             onChange={(e) =>
               setForm((prev) => ({ ...prev, refundableOnReturn: e.target.checked }))
             }
-            className="h-4 w-4 accent-emerald-600"
+            className="h-4 w-4 accent-[var(--accent)]"
           />
           Refund this if the item is returned
         </label>
@@ -805,7 +805,7 @@ function ChargeCategoryFormView({
                       nameSecondaryLanguage: e.target.value || null,
                     }))
                   }
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                 />
               </div>
 
@@ -826,7 +826,7 @@ function ChargeCategoryFormView({
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, countsTowardOtherBases: e.target.checked }))
                   }
-                  className="h-4 w-4 accent-emerald-600 disabled:accent-slate-300"
+                  className="h-4 w-4 accent-[var(--accent)] disabled:accent-slate-300"
                 />
                 Let other charges be calculated on top of this one
               </label>
@@ -838,7 +838,7 @@ function ChargeCategoryFormView({
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, isRegulatoryReportable: e.target.checked }))
                   }
-                  className="h-4 w-4 accent-emerald-600"
+                  className="h-4 w-4 accent-[var(--accent)]"
                 />
                 Reported to a tax authority
               </label>
@@ -857,7 +857,7 @@ function ChargeCategoryFormView({
                         regulatoryAuthorityName: e.target.value || null,
                       }))
                     }
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                   />
                 </div>
               )}
@@ -870,7 +870,7 @@ function ChargeCategoryFormView({
                 <button
                   type="button"
                   onClick={onAddRateLine}
-                  className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                  className="text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
                 >
                   + Add a rule
                 </button>
@@ -892,7 +892,7 @@ function ChargeCategoryFormView({
                             calculationType: e.target.value as ChargeRateLine["calculationType"],
                           })
                         }
-                        className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-400"
+                        className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-[var(--accent-border)]"
                       >
                         <option value="percentage">Percentage</option>
                         <option value="fixed">Fixed amount</option>
@@ -904,7 +904,7 @@ function ChargeCategoryFormView({
                         placeholder={rl.calculationType === "percentage" ? "e.g. 5 (%)" : "e.g. 20 (Rs)"}
                         value={rl.value}
                         onChange={(e) => onUpdateRateLine(index, { value: e.target.value })}
-                        className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-400"
+                        className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-[var(--accent-border)]"
                       />
 
                       <select
@@ -912,7 +912,7 @@ function ChargeCategoryFormView({
                         onChange={(e) =>
                           onUpdateRateLine(index, { scope: e.target.value as ChargeRateLine["scope"] })
                         }
-                        className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-400"
+                        className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-[var(--accent-border)]"
                       >
                         <option value="whole_bill">Whole bill</option>
                         <option value="per_product">Per product line</option>
@@ -927,7 +927,7 @@ function ChargeCategoryFormView({
                             manualSelectionLabel: null,
                           })
                         }
-                        className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-400"
+                        className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-[var(--accent-border)]"
                       >
                         <option value="payment_method">By payment method</option>
                         <option value="manual_selection">By manual selection</option>
@@ -940,7 +940,7 @@ function ChargeCategoryFormView({
                         onChange={(e) =>
                           onUpdateRateLine(index, { conditionPaymentMethodId: e.target.value || null })
                         }
-                        className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-400"
+                        className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-[var(--accent-border)]"
                       >
                         <option value="">Select payment method…</option>
                         {paymentMethods.map((pm) => (
@@ -959,7 +959,7 @@ function ChargeCategoryFormView({
                         onChange={(e) =>
                           onUpdateRateLine(index, { manualSelectionLabel: e.target.value || null })
                         }
-                        className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-400"
+                        className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-[var(--accent-border)]"
                       />
                     )}
 
@@ -971,7 +971,7 @@ function ChargeCategoryFormView({
                             dependsOnChargeCategoryId: e.target.value || null,
                           })
                         }
-                        className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-600 outline-none focus:border-emerald-400"
+                        className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-600 outline-none focus:border-[var(--accent-border)]"
                       >
                         <option value="">Calculated from the bill subtotal only</option>
                         {dependencyOptions.map((dep) => (
@@ -1003,7 +1003,7 @@ function ChargeCategoryFormView({
           type="button"
           onClick={onSave}
           disabled={saving}
-          className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
         >
           {saving ? "Saving…" : isEditing ? "Save changes" : "Create"}
         </button>
@@ -1076,7 +1076,7 @@ function ChargeCategoryCard({
             </span>
           )}
           {!category.branchId && (
-            <span className="ml-2 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+            <span className="ml-2 rounded bg-[var(--accent-soft)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent-hover)]">
               tenant-wide
             </span>
           )}
@@ -1092,7 +1092,7 @@ function ChargeCategoryCard({
           <button
             type="button"
             onClick={onEdit}
-            className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
+            className="text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
           >
             Edit
           </button>
@@ -1291,7 +1291,7 @@ function AssignmentsPanel({
             setLevel(e.target.value as AssignmentLevel);
             setTargetId("");
           }}
-          className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-400"
+          className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[var(--accent-border)]"
         >
           <option value="branch">Branch</option>
           <option value="product_category">Product category</option>
@@ -1303,7 +1303,7 @@ function AssignmentsPanel({
           <select
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
-            className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-400"
+            className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[var(--accent-border)]"
           >
             <option value="">Select branch…</option>
             {branch && <option value={branch.id}>{branch.name}</option>}
@@ -1312,7 +1312,7 @@ function AssignmentsPanel({
           <select
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
-            className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-400"
+            className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[var(--accent-border)]"
           >
             <option value="">Select category…</option>
             {productCategories.map((pc) => (
@@ -1325,7 +1325,7 @@ function AssignmentsPanel({
           <select
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
-            className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-400"
+            className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[var(--accent-border)]"
           >
             <option value="">Select sub-category…</option>
             {flatSubCategories.map((sc) => (
@@ -1338,7 +1338,7 @@ function AssignmentsPanel({
           <select
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
-            className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-400"
+            className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[var(--accent-border)]"
           >
             <option value="">Select product…</option>
             {products.map((p) => (
@@ -1352,7 +1352,7 @@ function AssignmentsPanel({
         <select
           value={overrideType}
           onChange={(e) => setOverrideType(e.target.value as OverrideType)}
-          className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-400"
+          className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[var(--accent-border)]"
         >
           <option value="inherit">Use the default rule</option>
           <option value="override_on">Always charge here</option>
@@ -1367,7 +1367,7 @@ function AssignmentsPanel({
               onChange={(e) =>
                 setRateOverrideCalculationType(e.target.value as "fixed" | "percentage")
               }
-              className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-400"
+              className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[var(--accent-border)]"
             >
               <option value="percentage">%</option>
               <option value="fixed">fixed</option>
@@ -1378,7 +1378,7 @@ function AssignmentsPanel({
               value={rateOverrideValue}
               onChange={(e) => setRateOverrideValue(e.target.value)}
               placeholder={rateOverrideCalculationType === "percentage" ? "e.g. 5" : "e.g. 10.00"}
-              className="w-24 rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-400"
+              className="w-24 rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[var(--accent-border)]"
             />
           </>
         )}

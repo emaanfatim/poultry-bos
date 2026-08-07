@@ -29,13 +29,13 @@ export default function LoginPage() {
 
   return (
     <GuestGuard>
-      <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-emerald-600 via-emerald-700 to-slate-900 px-4">
+      <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-[var(--accent)] via-[var(--accent-hover)] to-slate-900 px-4">
         <div className="w-full max-w-md">
           <div className="mb-6 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl font-bold text-emerald-700 shadow-md">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl font-bold text-[var(--accent-hover)] shadow-md">
               P
             </div>
-            <p className="text-sm font-medium text-emerald-50">Poultry BOS</p>
+            <p className="text-sm font-medium text-[#ecfdf5]">Poultry BOS</p>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
@@ -56,7 +56,7 @@ export default function LoginPage() {
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="username"
                   required
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                 />
               </div>
 
@@ -72,7 +72,7 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
                     required
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 pr-16 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 pr-16 text-slate-900 outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                   />
                   <button
                     type="button"
@@ -91,7 +91,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-xl bg-emerald-600 py-3.5 font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-xl bg-[var(--accent)] py-3.5 font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting ? "Signing in…" : "Sign in"}
               </button>

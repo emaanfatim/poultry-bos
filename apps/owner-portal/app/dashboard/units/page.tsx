@@ -204,7 +204,7 @@ function UnitsPageContent() {
         <button
           type="button"
           onClick={openCreate}
-          className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+          className="rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
         >
           + Add Unit
         </button>
@@ -240,7 +240,7 @@ function UnitsPageContent() {
                     <td className="px-4 py-3 font-medium text-slate-900">
                       {unit.name}
                       {unit.isBase && (
-                        <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-700">
+                        <span className="ml-2 rounded bg-[var(--accent-soft-strong)] px-1.5 py-0.5 text-xs font-medium text-[var(--accent-hover)]">
                           base
                         </span>
                       )}
@@ -266,7 +266,7 @@ function UnitsPageContent() {
                         onClick={() => handleToggle(unit)}
                         className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                           unit.isActive
-                            ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            ? "bg-[var(--accent-soft)] text-[var(--accent-hover)] hover:bg-[var(--accent-soft-strong)]"
                             : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                         }`}
                       >
@@ -278,7 +278,7 @@ function UnitsPageContent() {
                         <button
                           type="button"
                           onClick={() => openEdit(unit)}
-                          className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+                          className="text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
                         >
                           Edit
                         </button>
@@ -319,7 +319,7 @@ function UnitsPageContent() {
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="e.g. Kilogram, Maund, Piece"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent)]"
                 />
               </div>
 
@@ -335,7 +335,7 @@ function UnitsPageContent() {
                     value={form.code}
                     onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toLowerCase().replace(/\s/g, "_") }))}
                     placeholder="e.g. kg, maund, piece"
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-mono outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-mono outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent)]"
                   />
                 </div>
               )}
@@ -352,7 +352,7 @@ function UnitsPageContent() {
                         onClick={() => setForm((f) => ({ ...f, type: t, baseUnitId: "" }))}
                         className={`rounded-xl border-2 py-2 text-sm font-medium transition-all ${
                           form.type === t
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                            ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-hover)]"
                             : "border-slate-200 text-slate-600 hover:border-slate-300"
                         }`}
                       >
@@ -371,7 +371,7 @@ function UnitsPageContent() {
                     id="isBase"
                     checked={form.isBase}
                     onChange={(e) => setForm((f) => ({ ...f, isBase: e.target.checked, baseUnitId: "", conversionFactor: "" }))}
-                    className="h-4 w-4 rounded accent-emerald-600"
+                    className="h-4 w-4 rounded accent-[var(--accent)]"
                   />
                   <label htmlFor="isBase" className="text-sm font-medium text-slate-700">
                     This is a base unit (nothing converts into it)
@@ -390,7 +390,7 @@ function UnitsPageContent() {
                       value={form.baseUnitId}
                       onChange={(e) => setForm((f) => ({ ...f, baseUnitId: e.target.value }))}
                       disabled={!!editingUnit}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400 disabled:bg-slate-50"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent)] disabled:bg-slate-50"
                     >
                       <option value="">Select base unit...</option>
                       {sameTypeBaseUnits.map((u) => (
@@ -411,10 +411,10 @@ function UnitsPageContent() {
                       value={form.conversionFactor}
                       onChange={(e) => setForm((f) => ({ ...f, conversionFactor: e.target.value }))}
                       placeholder="e.g. 40 for Maund, 0.001 for Gram"
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent)]"
                     />
                     {form.conversionFactor && form.code && form.baseUnitId && (
-                      <p className="mt-1 text-xs text-emerald-600">
+                      <p className="mt-1 text-xs text-[var(--accent)]">
                         1 {form.code} = {form.conversionFactor}{" "}
                         {sameTypeBaseUnits.find((u) => u.id === form.baseUnitId)?.code}
                       </p>
@@ -441,7 +441,7 @@ function UnitsPageContent() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSaving}
-                className="flex-1 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="flex-1 rounded-xl bg-[var(--accent)] py-2.5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
               >
                 {isSaving ? "Saving..." : editingUnit ? "Save Changes" : "Add Unit"}
               </button>

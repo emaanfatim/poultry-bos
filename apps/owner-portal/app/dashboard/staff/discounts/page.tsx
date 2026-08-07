@@ -98,7 +98,7 @@ function StaffDiscountsContent() {
                 onClick={() => setSelectedId(cashier.id)}
                 className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left transition ${
                   selectedId === cashier.id
-                    ? "border-emerald-500 bg-emerald-50"
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)]"
                     : "border-slate-200 bg-white hover:border-slate-300"
                 }`}
               >
@@ -108,7 +108,7 @@ function StaffDiscountsContent() {
                 </div>
                 <div className="flex items-center gap-1">
                   {cashier.canApplyDiscount && (
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                    <span className="rounded-full bg-[var(--accent-soft-strong)] px-2 py-0.5 text-[10px] font-medium text-[var(--accent-hover)]">
                       ON
                     </span>
                   )}
@@ -302,7 +302,7 @@ function CashierDiscountPanel({
           type="checkbox"
           checked={canApplyDiscount}
           onChange={(e) => setCanApplyDiscount(e.target.checked)}
-          className="h-5 w-5 shrink-0 accent-emerald-600"
+          className="h-5 w-5 shrink-0 accent-[var(--accent)]"
         />
       </label>
 
@@ -316,7 +316,7 @@ function CashierDiscountPanel({
                 type="checkbox"
                 checked={percentageEnabled}
                 onChange={(e) => setPercentageEnabled(e.target.checked)}
-                className="h-4 w-4 accent-emerald-600"
+                className="h-4 w-4 accent-[var(--accent)]"
               />
             </label>
             <div className="flex items-center gap-1">
@@ -329,7 +329,7 @@ function CashierDiscountPanel({
                 value={maxDiscountPercentage}
                 onChange={(e) => setMaxDiscountPercentage(e.target.value)}
                 placeholder="e.g. 10"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-50 disabled:text-slate-300"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)] disabled:bg-slate-50 disabled:text-slate-300"
               />
               <span className="text-sm text-slate-500">%</span>
             </div>
@@ -343,7 +343,7 @@ function CashierDiscountPanel({
                 type="checkbox"
                 checked={flatEnabled}
                 onChange={(e) => setFlatEnabled(e.target.checked)}
-                className="h-4 w-4 accent-emerald-600"
+                className="h-4 w-4 accent-[var(--accent)]"
               />
             </label>
             <div className="flex items-center gap-1">
@@ -356,7 +356,7 @@ function CashierDiscountPanel({
                 value={maxDiscountFlatAmount}
                 onChange={(e) => setMaxDiscountFlatAmount(e.target.value)}
                 placeholder="e.g. 200"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-50 disabled:text-slate-300"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)] disabled:bg-slate-50 disabled:text-slate-300"
               />
             </div>
             <p className="mt-1 text-xs text-slate-400">Maximum this cashier can discount, in Rs.</p>
@@ -386,7 +386,7 @@ function CashierDiscountPanel({
               type="checkbox"
               checked={discountRestrictedToProducts}
               onChange={(e) => setDiscountRestrictedToProducts(e.target.checked)}
-              className="h-5 w-5 shrink-0 accent-emerald-600"
+              className="h-5 w-5 shrink-0 accent-[var(--accent)]"
             />
           </label>
 
@@ -397,7 +397,7 @@ function CashierDiscountPanel({
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
                 placeholder="Search products…"
-                className="mb-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                className="mb-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
               />
               <p className="mb-2 text-xs text-slate-400">
                 {allowedProductIds.size} product{allowedProductIds.size === 1 ? "" : "s"} approved
@@ -416,7 +416,7 @@ function CashierDiscountPanel({
                           type="checkbox"
                           checked={allowedProductIds.has(p.id)}
                           onChange={() => toggleProduct(p.id)}
-                          className="h-4 w-4 accent-emerald-600"
+                          className="h-4 w-4 accent-[var(--accent)]"
                         />
                         {p.name}
                         <span className="text-xs text-slate-400">
@@ -448,7 +448,7 @@ function CashierDiscountPanel({
               type="checkbox"
               checked={discountRestrictedToCategories}
               onChange={(e) => setDiscountRestrictedToCategories(e.target.checked)}
-              className="h-5 w-5 shrink-0 accent-emerald-600"
+              className="h-5 w-5 shrink-0 accent-[var(--accent)]"
             />
           </label>
 
@@ -472,7 +472,7 @@ function CashierDiscountPanel({
                           type="checkbox"
                           checked={allowedCategoryIds.has(cat.id)}
                           onChange={() => toggleCategory(cat.id)}
-                          className="h-4 w-4 accent-emerald-600"
+                          className="h-4 w-4 accent-[var(--accent)]"
                         />
                         {cat.name}
                       </span>
@@ -498,7 +498,7 @@ function CashierDiscountPanel({
             onChange={(e) =>
               setDiscountBillTypeScope(e.target.value as "priced_only" | "priced_and_unpriced")
             }
-            className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 sm:w-auto"
+            className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)] sm:w-auto"
           >
             <option value="priced_only">Priced bills only</option>
             <option value="priced_and_unpriced">Both priced and unpriced bills</option>
@@ -524,7 +524,7 @@ function CashierDiscountPanel({
                 : (e.target.value as "exact" | "round_up" | "round_down"),
             )
           }
-          className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 sm:w-auto"
+          className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent-border)] focus:ring-2 focus:ring-[var(--accent-soft-strong)] sm:w-auto"
         >
           <option value="">Use the payment method's default</option>
           <option value="exact">Always exact — never round</option>
@@ -538,11 +538,11 @@ function CashierDiscountPanel({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save changes"}
         </button>
-        {savedMessage && <span className="text-sm font-medium text-emerald-600">Saved ✓</span>}
+        {savedMessage && <span className="text-sm font-medium text-[var(--accent)]">Saved ✓</span>}
       </div>
     </div>
   );

@@ -272,7 +272,7 @@ function ModifierGroupsPageContent() {
           <p className="text-sm text-slate-500">
             Build a customer choice once (Size, Milk, Packaging…), then attach it to whichever
             products need it on the{" "}
-            <a href="/dashboard/products" className="font-medium text-emerald-600 hover:underline">
+            <a href="/dashboard/products" className="font-medium text-[var(--accent)] hover:underline">
               Products
             </a>{" "}
             page.
@@ -281,7 +281,7 @@ function ModifierGroupsPageContent() {
         <button
           type="button"
           onClick={() => (showForm ? cancelForm() : startNew())}
-          className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+          className="shrink-0 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
         >
           {showForm ? "Cancel" : "+ New Modifier"}
         </button>
@@ -310,7 +310,7 @@ function ModifierGroupsPageContent() {
                   placeholder="e.g. Size, Milk Type, Packaging"
                   value={form.name}
                   onChange={(e) => updateForm({ name: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                 />
               </div>
               <div>
@@ -322,7 +322,7 @@ function ModifierGroupsPageContent() {
                   onChange={(e) =>
                     updateForm({ selectionType: e.target.value as ModifierSelectionType })
                   }
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                 >
                   <option value="single">One option (e.g. Size)</option>
                   <option value="multi">Multiple / quantities (e.g. Add-ins)</option>
@@ -339,7 +339,7 @@ function ModifierGroupsPageContent() {
                   onClick={() => updateForm({ isPriced: false })}
                   className={`rounded-lg border p-3 text-left text-sm transition ${
                     !form.isPriced
-                      ? "border-emerald-500 bg-emerald-50 text-emerald-800"
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-hover)]"
                       : "border-slate-200 text-slate-600 hover:border-slate-300"
                   }`}
                 >
@@ -351,7 +351,7 @@ function ModifierGroupsPageContent() {
                   onClick={() => updateForm({ isPriced: true })}
                   className={`rounded-lg border p-3 text-left text-sm transition ${
                     form.isPriced
-                      ? "border-emerald-500 bg-emerald-50 text-emerald-800"
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-hover)]"
                       : "border-slate-200 text-slate-600 hover:border-slate-300"
                   }`}
                 >
@@ -376,7 +376,7 @@ function ModifierGroupsPageContent() {
                   <button
                     type="button"
                     onClick={addOptionRow}
-                    className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                    className="text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
                   >
                     + Add option
                   </button>
@@ -391,7 +391,7 @@ function ModifierGroupsPageContent() {
                         placeholder="Label (e.g. Large)"
                         value={option.label}
                         onChange={(e) => updateOptionRow(i, { label: e.target.value })}
-                        className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                        className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                       />
                       {form.isPriced && (
                         <div className="flex shrink-0 items-center gap-1">
@@ -404,7 +404,7 @@ function ModifierGroupsPageContent() {
                             onChange={(e) =>
                               updateOptionRow(i, { pricePerAdditionalUnit: e.target.value })
                             }
-                            className="w-24 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                            className="w-24 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                           />
                         </div>
                       )}
@@ -433,7 +433,7 @@ function ModifierGroupsPageContent() {
                                 ),
                               })
                             }
-                            className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                            className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                           />
                         )}
                         <input
@@ -446,7 +446,7 @@ function ModifierGroupsPageContent() {
                               maxQuantity: e.target.value ? parseInt(e.target.value, 10) : null,
                             })
                           }
-                          className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                          className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                         />
                         {form.isPriced && (
                           <select
@@ -454,7 +454,7 @@ function ModifierGroupsPageContent() {
                             onChange={(e) =>
                               updateOptionRow(i, { linkedProductId: e.target.value || null })
                             }
-                            className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                            className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                           >
                             <option value="">No live price link</option>
                             {products.map((p) => (
@@ -484,7 +484,7 @@ function ModifierGroupsPageContent() {
                 type="checkbox"
                 checked={form.isRequired}
                 onChange={(e) => updateForm({ isRequired: e.target.checked })}
-                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                className="h-4 w-4 rounded border-slate-300 text-[var(--accent)] focus:ring-[var(--accent)]"
               />
               Required — customer must choose before checkout
             </label>
@@ -494,7 +494,7 @@ function ModifierGroupsPageContent() {
                 type="button"
                 onClick={submitForm}
                 disabled={saving}
-                className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 sm:w-auto"
+                className="w-full rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50 sm:w-auto"
               >
                 {saving ? "Saving…" : editingId ? "Save Changes" : "Create Modifier"}
               </button>
@@ -537,7 +537,7 @@ function ModifierGroupsPageContent() {
                   <span
                     className={`rounded-md px-2 py-0.5 text-xs ${
                       group.isPriced
-                        ? "bg-emerald-50 text-emerald-700"
+                        ? "bg-[var(--accent-soft)] text-[var(--accent-hover)]"
                         : "bg-slate-100 text-slate-500"
                     }`}
                   >
@@ -548,7 +548,7 @@ function ModifierGroupsPageContent() {
                   <button
                     type="button"
                     onClick={() => startEdit(group)}
-                    className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                    className="text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
                   >
                     Edit
                   </button>
@@ -556,7 +556,7 @@ function ModifierGroupsPageContent() {
                     type="button"
                     onClick={() => toggleActive(group)}
                     className={`text-xs font-medium ${
-                      group.isActive ? "text-red-500 hover:text-red-700" : "text-emerald-600 hover:text-emerald-700"
+                      group.isActive ? "text-red-500 hover:text-red-700" : "text-[var(--accent)] hover:text-[var(--accent-hover)]"
                     }`}
                   >
                     {group.isActive ? "Deactivate" : "Activate"}

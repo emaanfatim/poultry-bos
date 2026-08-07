@@ -201,20 +201,20 @@ function CategoriesPageContent() {
             placeholder="Name (e.g. Live Products)"
             value={newCatName}
             onChange={(e) => setNewCatName(e.target.value)}
-            className="flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+            className="flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
           />
           <input
             type="text"
             placeholder="Token (e.g. CG2)"
             value={newCatToken}
             onChange={(e) => setNewCatToken(e.target.value)}
-            className="w-28 rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+            className="w-28 rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
           />
           <button
             type="button"
             onClick={createCategory}
             disabled={catSaving || !newCatName.trim() || !newCatToken.trim()}
-            className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
           >
             {catSaving ? "Saving…" : "Add Category"}
           </button>
@@ -246,7 +246,7 @@ function CategoriesPageContent() {
                 {/* Category Header */}
                 <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                   <div>
-                    <span className="mr-2 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                    <span className="mr-2 rounded-md bg-[var(--accent-soft)] px-2 py-0.5 text-xs font-medium text-[var(--accent-hover)]">
                       {cat.token}
                     </span>
                     <span className="font-semibold text-slate-900">{cat.name}</span>
@@ -300,7 +300,7 @@ function CategoriesPageContent() {
                     <button
                       type="button"
                       onClick={() => updateSubForm(cat.id, { open: true })}
-                      className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                      className="text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
                     >
                       + Add Subcategory
                     </button>
@@ -313,7 +313,7 @@ function CategoriesPageContent() {
                         onChange={(e) =>
                           updateSubForm(cat.id, { name: e.target.value })
                         }
-                        className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                        className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                       />
                       <input
                         type="text"
@@ -322,7 +322,7 @@ function CategoriesPageContent() {
                         onChange={(e) =>
                           updateSubForm(cat.id, { token: e.target.value })
                         }
-                        className="w-28 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                        className="w-28 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                       />
                       <button
                         type="button"
@@ -330,7 +330,7 @@ function CategoriesPageContent() {
                         disabled={
                           form.saving || !form.name.trim() || !form.token.trim()
                         }
-                        className="shrink-0 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                        className="shrink-0 rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
                       >
                         {form.saving ? "…" : "Save"}
                       </button>

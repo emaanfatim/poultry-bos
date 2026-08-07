@@ -445,7 +445,7 @@ function ProductsPageContent() {
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+          className="shrink-0 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
         >
           {showForm ? "Cancel" : "+ Add Product"}
         </button>
@@ -465,7 +465,7 @@ function ProductsPageContent() {
           {categories.length === 0 ? (
             <p className="text-sm text-slate-500">
               Create a category and sub-category first on the{" "}
-              <a href="/dashboard/categories" className="font-medium text-emerald-600 hover:underline">
+              <a href="/dashboard/categories" className="font-medium text-[var(--accent)] hover:underline">
                 Categories
               </a>{" "}
               page.
@@ -482,7 +482,7 @@ function ProductsPageContent() {
                   onChange={(e) =>
                     updateForm({ categoryId: e.target.value, subCategoryId: "" })
                   }
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                 >
                   <option value="">Select category…</option>
                   {categories.map((c) => (
@@ -500,7 +500,7 @@ function ProductsPageContent() {
                   value={form.subCategoryId}
                   onChange={(e) => updateForm({ subCategoryId: e.target.value })}
                   disabled={!selectedCategory}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-50"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)] disabled:bg-slate-50"
                 >
                   <option value="">
                     {selectedCategory ? "Select sub-category…" : "Choose a category first"}
@@ -521,7 +521,7 @@ function ProductsPageContent() {
                   placeholder="e.g. Live Broiler"
                   value={form.name}
                   onChange={(e) => updateForm({ name: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                 />
               </div>
 
@@ -533,7 +533,7 @@ function ProductsPageContent() {
                   placeholder="e.g. P1"
                   value={form.token}
                   onChange={(e) => updateForm({ token: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                 />
               </div>
 
@@ -545,7 +545,7 @@ function ProductsPageContent() {
                 <select
                   value={form.unitId}
                   onChange={(e) => updateForm({ unitId: e.target.value, sellableUnitIds: [] })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                 >
                   <option value="">Select unit…</option>
                   {units.map((u) => (
@@ -567,7 +567,7 @@ function ProductsPageContent() {
                   placeholder="e.g. 350.00"
                   value={form.currentPrice}
                   onChange={(e) => updateForm({ currentPrice: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                 />
               </div>
 
@@ -587,7 +587,7 @@ function ProductsPageContent() {
                           onClick={() => toggleFormSellableUnit(u.id)}
                           className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                             checked
-                              ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                              ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-hover)]"
                               : "border-slate-200 text-slate-600 hover:bg-slate-50"
                           }`}
                         >
@@ -618,8 +618,8 @@ function ProductsPageContent() {
                     onDrop={handleFormImageDrop}
                     className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-4 text-center transition-colors ${
                       formImageDragOver
-                        ? "border-emerald-400 bg-emerald-50"
-                        : "border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/40"
+                        ? "border-[var(--accent-border)] bg-[var(--accent-soft)]"
+                        : "border-slate-200 bg-white hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)]/40"
                     }`}
                   >
                     {form.imageKey ? (
@@ -665,7 +665,7 @@ function ProductsPageContent() {
                   type="checkbox"
                   checked={form.isServiceItem}
                   onChange={(e) => updateForm({ isServiceItem: e.target.checked })}
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  className="h-4 w-4 rounded border-slate-300 text-[var(--accent)] focus:ring-[var(--accent)]"
                 />
                 <label htmlFor="isServiceItem" className="text-sm text-slate-600">
                   This is a service item (no weight/inventory tracking, e.g. packaging)
@@ -677,7 +677,7 @@ function ProductsPageContent() {
                   type="button"
                   onClick={submitNewProduct}
                   disabled={saving}
-                  className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 sm:w-auto"
+                  className="w-full rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50 sm:w-auto"
                 >
                   {saving ? "Saving…" : "Add Product"}
                 </button>
@@ -723,14 +723,14 @@ function ProductsPageContent() {
                             }
                             onDrop={(e) => handleProductImageDrop(p, e)}
                             className={`-m-2 flex cursor-pointer items-center gap-1.5 rounded-lg p-2 transition-colors ${
-                              photoDragOverId === p.id ? "bg-emerald-50 ring-2 ring-emerald-300" : ""
+                              photoDragOverId === p.id ? "bg-[var(--accent-soft)] ring-2 ring-[var(--accent-border)]" : ""
                             }`}
                             title="Drag & drop or click to change photo"
                           >
                             <div
                               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border object-cover transition-colors ${
                                 photoDragOverId === p.id
-                                  ? "border-2 border-dashed border-emerald-400 bg-emerald-50"
+                                  ? "border-2 border-dashed border-[var(--accent-border)] bg-[var(--accent-soft)]"
                                   : p.imageKey
                                     ? "border-slate-200"
                                     : "border-dashed border-slate-200 text-[10px] text-slate-300"
@@ -750,7 +750,7 @@ function ProductsPageContent() {
                               className={`text-[10px] font-medium ${
                                 photoUploadingId === p.id
                                   ? "text-slate-300"
-                                  : "text-emerald-600 hover:text-emerald-700"
+                                  : "text-[var(--accent)] hover:text-[var(--accent-hover)]"
                               }`}
                             >
                               {photoUploadingId === p.id ? "…" : "Edit"}
@@ -766,7 +766,7 @@ function ProductsPageContent() {
 
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                              <span className="rounded-md bg-[var(--accent-soft)] px-2 py-0.5 text-xs font-medium text-[var(--accent-hover)]">
                                 {p.token}
                               </span>
                               <span
@@ -805,13 +805,13 @@ function ProductsPageContent() {
                                 onChange={(e) =>
                                   setPriceEdits((prev) => ({ ...prev, [p.id]: e.target.value }))
                                 }
-                                className="w-24 rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                                className="w-24 rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft-strong)]"
                               />
                               <button
                                 type="button"
                                 onClick={() => saveEditPrice(p.id)}
                                 disabled={priceSavingId === p.id}
-                                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                                className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
                               >
                                 {priceSavingId === p.id ? "…" : "Save"}
                               </button>
@@ -831,7 +831,7 @@ function ProductsPageContent() {
                               <button
                                 type="button"
                                 onClick={() => startEditPrice(p)}
-                                className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                                className="text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
                               >
                                 Edit price
                               </button>
@@ -841,7 +841,7 @@ function ProductsPageContent() {
                                   onClick={() =>
                                     isEditingUnits ? cancelEditUnits(p.id) : startEditUnits(p)
                                   }
-                                  className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                                  className="text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
                                 >
                                   {isEditingUnits ? "Close" : "Edit units"}
                                 </button>
@@ -854,7 +854,7 @@ function ProductsPageContent() {
                                     ? cancelEditModifiers(p.id)
                                     : startEditModifiers(p)
                                 }
-                                className="text-xs font-medium text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+                                className="text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-hover)] disabled:opacity-50"
                               >
                                 {modifierEditLoadingId === p.id
                                   ? "…"
@@ -868,7 +868,7 @@ function ProductsPageContent() {
                                 className={`text-xs font-medium ${
                                   p.status === "active"
                                     ? "text-red-500 hover:text-red-700"
-                                    : "text-emerald-600 hover:text-emerald-700"
+                                    : "text-[var(--accent)] hover:text-[var(--accent-hover)]"
                                 }`}
                               >
                                 {p.status === "active" ? "Deactivate" : "Activate"}
@@ -893,7 +893,7 @@ function ProductsPageContent() {
                                   onClick={() => toggleEditUnit(p.id, u.id)}
                                   className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                                     checked
-                                      ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                                      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-hover)]"
                                       : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
                                   }`}
                                 >
@@ -907,7 +907,7 @@ function ProductsPageContent() {
                               type="button"
                               onClick={() => saveEditUnits(p)}
                               disabled={unitsSavingId === p.id}
-                              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                              className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
                             >
                               {unitsSavingId === p.id ? "Saving…" : "Save units"}
                             </button>
@@ -934,7 +934,7 @@ function ProductsPageContent() {
                               No modifier groups yet. Build one on the{" "}
                               <a
                                 href="/dashboard/modifier-groups"
-                                className="font-medium text-emerald-600 hover:underline"
+                                className="font-medium text-[var(--accent)] hover:underline"
                               >
                                 Modifier Groups
                               </a>{" "}
@@ -951,7 +951,7 @@ function ProductsPageContent() {
                                     onClick={() => toggleEditModifierGroup(p.id, g.id)}
                                     className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                                       checked
-                                        ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                                        ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-hover)]"
                                         : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
                                     }`}
                                   >
@@ -967,7 +967,7 @@ function ProductsPageContent() {
                               type="button"
                               onClick={() => saveEditModifiers(p)}
                               disabled={modifierSavingId === p.id}
-                              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                              className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
                             >
                               {modifierSavingId === p.id ? "Saving…" : "Save modifier groups"}
                             </button>
