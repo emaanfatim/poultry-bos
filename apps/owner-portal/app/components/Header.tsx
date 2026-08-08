@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "../providers/AuthProvider";
+import { useBranch } from "../providers/BranchProvider";
 import { SettingsPanel } from "./SettingsPanel";
 
 export function Header() {
   const { user, tenant, branch, logout } = useAuth();
+  const { branches, activeBranchId, isLoading: branchesLoading, switchBranch } = useBranch();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -38,12 +40,29 @@ export function Header() {
           <h1 className="text-lg font-bold text-[var(--foreground)]">
             Owner Portal
           </h1>
-          <p className="text-xs text-[var(--muted-foreground)]">
-            {tenant?.name} · {branch?.name}
-          </p>
+          <p className="text-xs text-[var(--muted-foreground)]">{tenant?.name}</p>
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
+          {branches.length > 1 ? (
+            <select
+              value={activeBranchId ?? ""}
+              onChange={(e) => switchBranch(e.target.value)}
+              disabled={branchesLoading}
+              aria-label="Switch branch"
+              className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--surface-2)] disabled:opacity-60"
+            >
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="hidden text-sm text-[var(--muted-foreground)] sm:inline">
+              {branch?.name}
+            </span>
+          )}
           <span className="hidden text-sm text-[var(--foreground)] sm:inline">
             {user?.displayName}
           </span>

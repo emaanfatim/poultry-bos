@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Transaction } from "@repo/types";
 import { useAuth } from "../../providers/AuthProvider";
+import { useBranch } from "../../providers/BranchProvider";
 import { formatCurrency } from "../../services/sales";
 
 interface ReceiptPreviewProps {
@@ -15,7 +16,12 @@ interface ReceiptPreviewProps {
 // ReceiptPreview (same layout/PDF export) but drops the notes editor and
 // "New Sale" action, since owners are only ever inspecting a past sale here.
 export function ReceiptPreview({ transaction, onPrint, onClose }: ReceiptPreviewProps) {
-  const { tenant, branch } = useAuth();
+  const { tenant } = useAuth();
+  // The transaction being previewed belongs to whichever branch is
+  // currently active (Summary only ever fetches that branch's sales), so
+  // the printed branch name should match it rather than the owner's home
+  // branch.
+  const { activeBranch: branch } = useBranch();
   const symbol = tenant?.currencySymbol ?? "Rs";
 
   const billType = transaction.billType;

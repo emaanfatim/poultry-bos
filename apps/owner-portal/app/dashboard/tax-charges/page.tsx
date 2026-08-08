@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Product } from "@repo/types";
 import { useAuth } from "../../providers/AuthProvider";
+import { useBranch } from "../../providers/BranchProvider";
 import { AuthGuard } from "../../components/AuthGuard";
 import { Header } from "../../components/Header";
 import { fetchProducts } from "../../services/products";
@@ -73,7 +74,8 @@ function emptyForm(): ChargeCategoryPayload {
 }
 
 function TaxChargesContent() {
-  const { token, user, branch } = useAuth();
+  const { token, user } = useAuth();
+  const { activeBranch: branch } = useBranch();
 
   const [categories, setCategories] = useState<ChargeCategory[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -1037,7 +1039,7 @@ function ChargeCategoryCard({
   paymentMethods: PaymentMethod[];
   productCategories: ProductCategoryLite[];
   products: Product[];
-  branch: { id: string; name: string; token: string } | null;
+  branch: { id: string; name: string } | null;
   token: string;
   assignmentsOpen: boolean;
   onToggleAssignments: () => void;
@@ -1144,7 +1146,7 @@ function AssignmentsPanel({
   category: ChargeCategory;
   productCategories: ProductCategoryLite[];
   products: Product[];
-  branch: { id: string; name: string; token: string } | null;
+  branch: { id: string; name: string } | null;
   token: string;
 }) {
   const [assignments, setAssignments] = useState<ChargeAssignment[]>([]);

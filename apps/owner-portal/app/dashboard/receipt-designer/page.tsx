@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useCallback, useMemo, useState } from "react";
 import type { DragEvent } from "react";
 import type { ReceiptBlock, ReceiptBlockType, ReceiptTemplatePresetId, TenantConfig } from "@repo/types";
 import { useAuth } from "../../providers/AuthProvider";
+import { useBranch } from "../../providers/BranchProvider";
 import { AuthGuard } from "../../components/AuthGuard";
 import { Header } from "../../components/Header";
 import { fileToLogoImage, ImageProcessingError } from "../../lib/image";
@@ -36,7 +37,26 @@ export default function ReceiptDesignerPage() {
 }
 
 function ReceiptDesignerContent() {
-  const { token, user, tenant, branch, updateProfile } = useAuth();
+  const { token, user, tenant, updateProfile } = useAuth();
+  const { activeBranch: branch, renameBranch } = useBranch();
+
+  // Tenant fields (address/phone) always apply via AuthProvider; a branch
+  // name change is reflected onto whichever branch was actually edited
+  // (the active one), not assumed to be the owner's own home branch.
+  const handleProfileUpdated = useCallback(
+    (patch: {
+      tenant?: Partial<TenantConfig>;
+      branch?: Partial<{ id: string; name: string; token: string }>;
+    }) => {
+      if (patch.tenant) {
+        updateProfile({ tenant: patch.tenant });
+      }
+      if (patch.branch?.id && patch.branch?.name) {
+        renameBranch(patch.branch.id, patch.branch.name);
+      }
+    },
+    [updateProfile, renameBranch],
+  );
 
   const [scope, setScope] = useState<ReceiptTemplateScope>("branch");
   const [hasBranchOverride, setHasBranchOverride] = useState(false);
@@ -534,7 +554,7 @@ function ReceiptDesignerContent() {
                         token={token}
                         tenant={tenant}
                         branch={branch}
-                        onProfileUpdated={updateProfile}
+                        onProfileUpdated={handleProfileUpdated}
                       />
                     )}
                   </div>
@@ -592,7 +612,7 @@ function BlockConfigPanel({
   logoUploading: boolean;
   token: string | null;
   tenant: TenantConfig | null;
-  branch: { id: string; name: string; token: string } | null;
+  branch: { id: string; name: string } | null;
   onProfileUpdated: (patch: {
     tenant?: Partial<TenantConfig>;
     branch?: Partial<{ id: string; name: string; token: string }>;
@@ -842,7 +862,7 @@ function BusinessProfileFields({
 }: {
   token: string | null;
   tenant: TenantConfig | null;
-  branch: { id: string; name: string; token: string } | null;
+  branch: { id: string; name: string } | null;
   onProfileUpdated: (patch: {
     tenant?: Partial<TenantConfig>;
     branch?: Partial<{ id: string; name: string; token: string }>;

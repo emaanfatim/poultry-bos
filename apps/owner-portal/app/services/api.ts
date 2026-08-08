@@ -1,3 +1,5 @@
+import { getActiveBranchId } from "./branchContext";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
 export class ApiError extends Error {
@@ -22,6 +24,16 @@ async function request<T>(
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
+  }
+
+  // Owner Portal branch switcher — every request carries whichever branch
+  // the owner currently has selected, so branch-scoped endpoints (business
+  // profile, receipt templates, till settings, charges, sales summary,
+  // etc.) act on that branch instead of the branch the owner's account
+  // happens to be pinned to. Ignored server-side for non-owner tokens.
+  const activeBranchId = getActiveBranchId();
+  if (activeBranchId) {
+    headers["X-Branch-Id"] = activeBranchId;
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
