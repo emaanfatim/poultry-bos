@@ -387,6 +387,7 @@ CREATE TABLE "users" (
 	"username" text NOT NULL,
 	"password_hash" text NOT NULL,
 	"display_name" text NOT NULL,
+	"phone" text,
 	"role" text DEFAULT 'cashier' NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"requires_till_count" boolean DEFAULT false NOT NULL,

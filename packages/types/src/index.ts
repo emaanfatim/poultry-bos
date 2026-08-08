@@ -1,5 +1,5 @@
 export type ProductStatus = "active" | "inactive";
-export type UserRole = "owner" | "cashier";
+export type UserRole = "owner" | "cashier" | "staff" | "manager" | "other";
 export type BillType = "priced" | "unpriced" | "miscellaneous";
 export type UnitType = "weight" | "volume" | "count";
 

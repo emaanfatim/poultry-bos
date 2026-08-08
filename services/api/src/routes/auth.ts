@@ -6,6 +6,7 @@ import { z } from "zod";
 import { branches, tenants, users } from "@repo/database";
 import { getDb } from "../db";
 import { getJwtSecret } from "../lib/jwt";
+import type { UserRole } from "@repo/types";
 
 const loginSchema = z.object({
   username: z.string().min(1),
@@ -119,7 +120,7 @@ authRoutes.get("/me", async (c) => {
       branchId: string;
       username: string;
       displayName: string;
-      role: "owner" | "cashier";
+      role: UserRole;
       canIssuePricedBill?: boolean;
     };
 

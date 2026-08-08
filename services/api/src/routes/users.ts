@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { and, eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { users } from "@repo/database";
+import { branches, users } from "@repo/database";
 import { getDb } from "../db";
 import { authMiddleware, requireOwner } from "../middleware/auth";
 import type { AppVariables } from "../types";
@@ -28,8 +29,10 @@ usersRoutes.get("/", async (c) => {
       id: users.id,
       username: users.username,
       displayName: users.displayName,
+      phone: users.phone,
       role: users.role,
       isActive: users.isActive,
+      branchId: users.branchId,
       requiresTillCount: users.requiresTillCount,
       canReceiveHandover: users.canReceiveHandover,
       reportsToId: users.reportsToId,
@@ -42,6 +45,99 @@ usersRoutes.get("/", async (c) => {
     .where(and(eq(users.tenantId, tenantId), eq(users.branchId, branchId)));
 
   return c.json({ users: rows });
+});
+
+const createUserSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(3, "Username must be at least 3 characters")
+    .max(50)
+    .regex(/^[a-zA-Z0-9._-]+$/, "Username can only contain letters, numbers, dots, - and _"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  displayName: z.string().trim().min(1, "Display name is required").max(120),
+  // Free-text so any local format/country code works; optional since not
+  // every owner has it on hand at account-creation time.
+  phone: z.string().trim().max(30).optional().or(z.literal("")),
+  // Any role except "owner" can be self-served here — full owner accounts
+  // are provisioned outside this flow so an owner can't silently mint
+  // another full-access owner account for the tenant from this form.
+  role: z.enum(["cashier", "staff", "manager", "other"]).default("cashier"),
+  // Which branch this staff member is pinned to. Required because an owner
+  // managing several branches needs to say which one the new account
+  // belongs to — it is NOT inferred from the owner's currently-active
+  // branch, since that can be switched separately.
+  branchId: z.string().uuid("Choose a branch"),
+});
+
+// POST /users — owner-only. Creates a new staff account (cashier, staff,
+// manager, or other) for one of the owner's branches, with login
+// credentials and optional contact details set up front. Till/discount/
+// handover permissions are left at their safe defaults here and granted
+// afterwards from Staff · Till and Staff · Discounts, same as for any
+// other non-owner account.
+usersRoutes.post("/", requireOwner, async (c) => {
+  const tenantId = c.get("tenantId");
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = createUserSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, 400);
+  }
+
+  const { username, password, displayName, role, branchId } = parsed.data;
+  const phone = parsed.data.phone ? parsed.data.phone : null;
+
+  const db = getDb();
+
+  // Branch must belong to the caller's own tenant — an owner can only
+  // create accounts on their own branches, not anyone else's.
+  const [targetBranch] = await db
+    .select({ id: branches.id })
+    .from(branches)
+    .where(and(eq(branches.id, branchId), eq(branches.tenantId, tenantId)))
+    .limit(1);
+
+  if (!targetBranch) {
+    return c.json({ error: "Invalid branch" }, 400);
+  }
+
+  // Usernames are unique per tenant (users_tenant_username_idx), so check
+  // up front for a friendly error instead of surfacing a raw DB conflict.
+  const [existing] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.tenantId, tenantId), eq(users.username, username)))
+    .limit(1);
+
+  if (existing) {
+    return c.json({ error: "That username is already taken" }, 409);
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  const [created] = await db
+    .insert(users)
+    .values({
+      tenantId,
+      branchId,
+      username,
+      passwordHash,
+      displayName,
+      phone,
+      role,
+    })
+    .returning({
+      id: users.id,
+      username: users.username,
+      displayName: users.displayName,
+      phone: users.phone,
+      role: users.role,
+      isActive: users.isActive,
+      branchId: users.branchId,
+    });
+
+  return c.json({ user: created }, 201);
 });
 
 const tillSettingsSchema = z.object({

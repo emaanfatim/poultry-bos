@@ -74,7 +74,11 @@ export const users = pgTable(
     username: text("username").notNull(),
     passwordHash: text("password_hash").notNull(),
     displayName: text("display_name").notNull(),
-    role: text("role", { enum: ["owner", "cashier"] })
+    // Owner Portal · Staff Accounts — optional contact number captured when
+    // the owner creates a staff account. Nullable since existing seeded/
+    // migrated users never had one on file.
+    phone: text("phone"),
+    role: text("role", { enum: ["owner", "cashier", "staff", "manager", "other"] })
       .notNull()
       .default("cashier"),
     isActive: boolean("is_active").notNull().default(true),

@@ -85,6 +85,7 @@ export function Header() {
         {navLink("/dashboard/units", "Units")}
         {navLink("/dashboard/tax-charges", "Tax & Charges")}
         {navLink("/dashboard/receipt-designer", "Receipt Designer")}
+        {navLink("/dashboard/staff/accounts", "Staff · Accounts")}
         {navLink("/dashboard/staff/discounts", "Staff · Discounts")}
         {navLink("/dashboard/staff/till", "Staff · Till")}
       </nav>

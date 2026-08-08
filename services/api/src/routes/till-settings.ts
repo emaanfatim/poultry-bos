@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 import { users } from "@repo/database";
 import { getDb } from "../db";
@@ -24,9 +24,9 @@ const selectFields = {
   requiresTillCount: users.requiresTillCount,
 };
 
-// GET /till-settings — every cashier in this tenant/branch with their
-// current till requirements. Owners aren't listed — these flags don't
-// apply to them.
+// GET /till-settings — every non-owner staff account (cashier, staff,
+// manager, other) in this tenant/branch with their current till
+// requirements. Owners aren't listed — these flags don't apply to them.
 tillSettingsRoutes.get("/", async (c) => {
   const tenantId = c.get("tenantId");
   const branchId = c.get("branchId");
@@ -39,7 +39,7 @@ tillSettingsRoutes.get("/", async (c) => {
       and(
         eq(users.tenantId, tenantId),
         eq(users.branchId, branchId),
-        eq(users.role, "cashier"),
+        ne(users.role, "owner"),
       ),
     );
 
@@ -74,7 +74,7 @@ tillSettingsRoutes.patch("/:userId", async (c) => {
         eq(users.id, userId),
         eq(users.tenantId, tenantId),
         eq(users.branchId, branchId),
-        eq(users.role, "cashier"),
+        ne(users.role, "owner"),
       ),
     )
     .limit(1);
