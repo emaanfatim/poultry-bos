@@ -193,7 +193,7 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
                 isNaN(parseFloat(quantity)) ||
                 parseFloat(quantity) <= 0
               }
-              className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="shrink-0 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {product.hasModifiers ? "Choose" : t.pos.addToCart}
             </button>

@@ -514,7 +514,7 @@ export function ReceiptPreview({
           <button
             type="button"
             onClick={onNewSale}
-            className="flex-1 rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700"
+            className="flex-1 rounded-xl bg-[var(--accent)] py-3 font-semibold text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)]"
           >
             {t.receipt.newSale}
           </button>

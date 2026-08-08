@@ -34,7 +34,7 @@ export function CartSummary({
         type="button"
         onClick={onCheckout}
         disabled={disabled}
-        className="w-full rounded-xl bg-emerald-600 py-3.5 text-base font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+        className="w-full rounded-xl bg-[var(--accent)] py-3.5 text-base font-semibold text-[var(--accent-foreground)] transition hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:bg-slate-300"
       >
         {t.pos.checkout}
       </button>

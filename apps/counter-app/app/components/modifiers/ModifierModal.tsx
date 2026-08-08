@@ -361,7 +361,7 @@ export function ModifierModal({
                 type="button"
                 disabled={!canConfirm}
                 onClick={() => onConfirm(product, quantity, unit, buildSelectedModifiers(), kitchenNote)}
-                className="flex-2 flex-1 rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-2 flex-1 rounded-xl bg-[var(--accent)] py-3 text-sm font-semibold text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Add to cart
               </button>

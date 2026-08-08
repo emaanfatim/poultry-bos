@@ -180,7 +180,7 @@ export default function HandoverPage() {
                     type="button"
                     onClick={handleSubmit}
                     disabled={isSubmitting || !totalReceived}
-                    className="w-full rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full rounded-xl bg-[var(--accent)] px-6 py-3 font-semibold text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isSubmitting ? t.till.submitting : t.till.confirmHandover}
                   </button>

@@ -150,7 +150,7 @@ export default function PricesPage() {
               type="button"
               onClick={handleSave}
               disabled={isSaving || isLoading || !hasChanges}
-              className="rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-xl bg-[var(--accent)] px-6 py-3 font-semibold text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSaving
                 ? t.prices.saving
@@ -275,7 +275,7 @@ function ProductRow({
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="rounded-lg bg-[var(--accent)] px-3 py-1 text-xs font-semibold text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] disabled:opacity-50"
               >
                 {saving ? "Saving…" : "Save"}
               </button>
