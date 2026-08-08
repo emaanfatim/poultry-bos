@@ -6,6 +6,7 @@ import { useAuth } from "../../providers/AuthProvider";
 import { useI18n } from "../../providers/I18nProvider";
 import { useTill } from "../../providers/TillProvider";
 import { formatCurrency } from "../../services/sales";
+import { SettingsPanel } from "./SettingsPanel";
 
 export function Header() {
   const { user, tenant, branch, isOwner, canReceiveHandover, logout } = useAuth();
@@ -27,8 +28,8 @@ export function Header() {
         href={href}
         className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
           active
-            ? "bg-emerald-600 text-white"
-            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+            : "text-[var(--muted-foreground)] hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
         }`}
       >
         {label}
@@ -43,36 +44,36 @@ export function Header() {
   ] as const;
 
   return (
-    <header className="border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
+    <header className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-sm">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-bold text-slate-900">{t.app.title}</h1>
-          <p className="text-xs text-slate-500">
+          <h1 className="text-lg font-bold text-[var(--foreground)]">{t.app.title}</h1>
+          <p className="text-xs text-[var(--muted-foreground)]">
             {tenant?.name} · {branch?.name}
           </p>
         </div>
 
         {tillSession && (
-          <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs">
+          <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs">
             <div className="flex flex-col leading-tight">
-              <span className="text-slate-400">{t.till.headerStartTill}</span>
-              <span className="font-semibold text-slate-700">
+              <span className="text-[var(--muted-foreground)]">{t.till.headerStartTill}</span>
+              <span className="font-semibold text-[var(--foreground)]">
                 {formatCurrency(tillSession.openingCash, symbol)}
               </span>
             </div>
-            <span className="text-slate-300">|</span>
+            <span className="text-[var(--border)]">|</span>
             <div className="flex flex-col leading-tight">
-              <span className="text-slate-400">{t.till.headerCurrentTill}</span>
-              <span className="font-semibold text-emerald-700">
+              <span className="text-[var(--muted-foreground)]">{t.till.headerCurrentTill}</span>
+              <span className="font-semibold text-[var(--accent-hover)]">
                 {formatCurrency(tillSession.currentCash ?? tillSession.openingCash, symbol)}
               </span>
             </div>
             {tillSession.cashSalesToday !== undefined && (
               <>
-                <span className="text-slate-300">|</span>
+                <span className="text-[var(--border)]">|</span>
                 <div className="flex flex-col leading-tight">
-                  <span className="text-slate-400">{t.till.headerSalesToday}</span>
-                  <span className="font-semibold text-slate-700">
+                  <span className="text-[var(--muted-foreground)]">{t.till.headerSalesToday}</span>
+                  <span className="font-semibold text-[var(--foreground)]">
                     {formatCurrency(tillSession.cashSalesToday, symbol)}
                   </span>
                 </div>
@@ -91,7 +92,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <div className="flex rounded-lg border border-slate-200 p-0.5 text-xs">
+          <div className="flex rounded-lg border border-[var(--border)] p-0.5 text-xs">
             {languages.map(({ code, label }) => (
               <button
                 key={code}
@@ -99,21 +100,22 @@ export function Header() {
                 onClick={() => setLocale(code)}
                 className={`rounded-md px-3 py-1 transition-colors ${
                   locale === code
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-600 hover:bg-slate-100"
+                    ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
+                    : "text-[var(--muted-foreground)] hover:bg-[var(--surface-2)]"
                 }`}
               >
                 {label}
               </button>
             ))}
           </div>
-          <span className="hidden text-sm text-slate-600 sm:inline">
+          <span className="hidden text-sm text-[var(--foreground)] sm:inline">
             {user?.displayName}
           </span>
+          <SettingsPanel />
           <button
             type="button"
             onClick={handleLogout}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+            className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--surface-2)]"
           >
             {t.nav.logout}
           </button>

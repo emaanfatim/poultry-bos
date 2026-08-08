@@ -33,7 +33,7 @@ export function Header() {
 
   return (
     <header className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-sm">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-bold text-[var(--foreground)]">
             Owner Portal
@@ -43,19 +43,7 @@ export function Header() {
           </p>
         </div>
 
-        <nav className="flex flex-wrap items-center gap-1">
-          {navLink("/dashboard/summary", "Summary")}
-          {navLink("/dashboard/categories", "Categories")}
-          {navLink("/dashboard/products", "Products")}
-          {navLink("/dashboard/modifier-groups", "Modifier Groups")}
-          {navLink("/dashboard/units", "Units")}
-          {navLink("/dashboard/tax-charges", "Tax & Charges")}
-          {navLink("/dashboard/receipt-designer", "Receipt Designer")}
-          {navLink("/dashboard/staff/discounts", "Staff · Discounts")}
-          {navLink("/dashboard/staff/till", "Staff · Till")}
-        </nav>
-
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <span className="hidden text-sm text-[var(--foreground)] sm:inline">
             {user?.displayName}
           </span>
@@ -69,6 +57,18 @@ export function Header() {
           </button>
         </div>
       </div>
+
+      <nav className="mx-auto mt-2 flex max-w-7xl flex-wrap items-center gap-1">
+        {navLink("/dashboard/summary", "Summary")}
+        {navLink("/dashboard/categories", "Categories")}
+        {navLink("/dashboard/products", "Products")}
+        {navLink("/dashboard/modifier-groups", "Modifier Groups")}
+        {navLink("/dashboard/units", "Units")}
+        {navLink("/dashboard/tax-charges", "Tax & Charges")}
+        {navLink("/dashboard/receipt-designer", "Receipt Designer")}
+        {navLink("/dashboard/staff/discounts", "Staff · Discounts")}
+        {navLink("/dashboard/staff/till", "Staff · Till")}
+      </nav>
     </header>
   );
 }
