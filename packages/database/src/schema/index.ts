@@ -193,12 +193,19 @@ export const productCategories = pgTable(
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
     name: text("name").notNull(),
     token: text("token").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("product_categories_tenant_token_idx").on(table.tenantId, table.token),
+    uniqueIndex("product_categories_tenant_branch_token_idx").on(
+      table.tenantId,
+      table.branchId,
+      table.token,
+    ),
   ],
 );
 
@@ -209,6 +216,9 @@ export const productSubCategories = pgTable(
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
     categoryId: uuid("category_id")
       .notNull()
       .references(() => productCategories.id),
@@ -217,7 +227,11 @@ export const productSubCategories = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("product_sub_categories_tenant_token_idx").on(table.tenantId, table.token),
+    uniqueIndex("product_sub_categories_tenant_branch_token_idx").on(
+      table.tenantId,
+      table.branchId,
+      table.token,
+    ),
   ],
 );
 
@@ -229,6 +243,9 @@ export const units = pgTable(
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
     name: text("name").notNull(),
     code: text("code").notNull(),
     type: text("type", { enum: ["weight", "volume", "count"] }).notNull(),
@@ -241,7 +258,7 @@ export const units = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("units_tenant_code_idx").on(table.tenantId, table.code),
+    uniqueIndex("units_tenant_branch_code_idx").on(table.tenantId, table.branchId, table.code),
   ],
 );
 
@@ -252,6 +269,9 @@ export const products = pgTable(
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
     subCategoryId: uuid("sub_category_id")
       .notNull()
       .references(() => productSubCategories.id),
@@ -277,7 +297,7 @@ export const products = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("products_tenant_token_idx").on(table.tenantId, table.token),
+    uniqueIndex("products_tenant_branch_token_idx").on(table.tenantId, table.branchId, table.token),
   ],
 );
 

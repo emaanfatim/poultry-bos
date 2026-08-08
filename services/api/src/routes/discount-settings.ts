@@ -89,11 +89,15 @@ discountSettingsRoutes.get("/me", async (c) => {
 // do at checkout, so only the owner may read or change them for others.
 discountSettingsRoutes.use("*", requireOwner);
 
-// GET /discount-settings — every cashier (role = cashier) in this tenant,
-// with their current discount grant/caps. Owners aren't listed — the
-// discount cap system doesn't apply to them.
+// GET /discount-settings — every cashier (role = cashier) in the active
+// branch, with their current discount grant/caps. Owners aren't listed —
+// the discount cap system doesn't apply to them. Scoped by branchId (see
+// till-settings.ts for the equivalent pattern) so switching branches in
+// the Owner Portal shows that branch's own cashiers, not every cashier in
+// the tenant.
 discountSettingsRoutes.get("/", async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const db = getDb();
 
   const rows = await db
@@ -111,7 +115,13 @@ discountSettingsRoutes.get("/", async (c) => {
       roundingMethodOverride: users.roundingMethodOverride,
     })
     .from(users)
-    .where(and(eq(users.tenantId, tenantId), eq(users.role, "cashier")));
+    .where(
+      and(
+        eq(users.tenantId, tenantId),
+        eq(users.branchId, branchId),
+        eq(users.role, "cashier"),
+      ),
+    );
 
   return c.json({ cashiers: rows });
 });

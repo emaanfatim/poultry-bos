@@ -10,12 +10,17 @@ export const usersRoutes = new Hono<{ Variables: AppVariables }>();
 
 usersRoutes.use("*", authMiddleware);
 
-// GET /users — list staff for this tenant, with their till settings
+// GET /users — list staff for this branch, with their till settings
 // (Handover doc, Part 1 §2 and §6). Any authenticated staff member can read
 // this — it's needed to show cashier names on handovers/reports — but only
-// the owner can change the settings below.
+// the owner can change the settings below. Scoped to the active branch
+// (c.get("branchId") — the owner's selected branch via X-Branch-Id, or the
+// caller's own pinned branch for non-owners) since users.branchId is a
+// strict one-branch assignment; without this filter every branch showed
+// the same tenant-wide staff list.
 usersRoutes.get("/", async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const db = getDb();
 
   const rows = await db
@@ -34,7 +39,7 @@ usersRoutes.get("/", async (c) => {
       discountRestrictedToProducts: users.discountRestrictedToProducts,
     })
     .from(users)
-    .where(eq(users.tenantId, tenantId));
+    .where(and(eq(users.tenantId, tenantId), eq(users.branchId, branchId)));
 
   return c.json({ users: rows });
 });
