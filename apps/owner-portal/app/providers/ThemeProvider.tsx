@@ -78,9 +78,11 @@ function readPersistedPrefs(): ThemePrefs {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   // Lazy initializer: on the client this reads the same value the inline
   // no-flash script already applied to <html>, so React state and the DOM
-  // agree from the first client render (the server render always uses
-  // DEFAULT_THEME, which only affects internal state, not markup/CSS, so
-  // there's no hydration mismatch to worry about).
+  // agree from the first client render. The <html> tag itself carries
+  // `suppressHydrationWarning` (see layout.tsx) because that inline script
+  // sets data-appearance/data-accent/data-density on the real DOM node
+  // before React hydrates, which would otherwise be flagged as a
+  // server/client mismatch even though it's intentional.
   const [prefs, setPrefs] = useState<ThemePrefs>(readPersistedPrefs);
 
   useEffect(() => {

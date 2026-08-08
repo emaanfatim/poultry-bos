@@ -395,7 +395,13 @@ salesRoutes.post("/", async (c) => {
       })
       .from(products)
       .innerJoin(units, eq(products.unitId, units.id))
-      .where(and(eq(products.id, item.productId), eq(products.tenantId, tenantId)))
+      .where(
+        and(
+          eq(products.id, item.productId),
+          eq(products.tenantId, tenantId),
+          eq(products.branchId, branchId),
+        ),
+      )
       .limit(1);
 
     if (!row || row.status !== "active") {
@@ -1007,6 +1013,7 @@ salesRoutes.get("/daily-summary", async (c) => {
 
 salesRoutes.get("/:id", async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const transactionId = c.req.param("id");
   const db = getDb();
 
@@ -1034,7 +1041,13 @@ salesRoutes.get("/:id", async (c) => {
     .from(transactions)
     .innerJoin(users, eq(transactions.createdBy, users.id))
     .leftJoin(paymentMethods, eq(transactions.paymentMethodId, paymentMethods.id))
-    .where(and(eq(transactions.id, transactionId), eq(transactions.tenantId, tenantId)))
+    .where(
+      and(
+        eq(transactions.id, transactionId),
+        eq(transactions.tenantId, tenantId),
+        eq(transactions.branchId, branchId),
+      ),
+    )
     .limit(1);
 
   if (!transaction) {

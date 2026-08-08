@@ -33,7 +33,14 @@ function StaffTillContent() {
     fetchCashierTillSettings(token)
       .then((rows) => {
         setCashiers(rows);
-        setSelectedId((current) => current ?? rows[0]?.id ?? null);
+        // Keep the selection if it's still in the list; otherwise fall back
+        // to the first row (or none). Using a functional update means this
+        // also recovers correctly if the previously-selected cashier
+        // disappeared from a refetch (role change, deactivation, etc.)
+        // instead of leaving `selectedId` pointing at a row that's gone.
+        setSelectedId((current) =>
+          current && rows.some((row) => row.id === current) ? current : (rows[0]?.id ?? null),
+        );
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
       .finally(() => setLoading(false));
@@ -44,6 +51,9 @@ function StaffTillContent() {
     try {
       const rows = await fetchCashierTillSettings(token);
       setCashiers(rows);
+      setSelectedId((current) =>
+        current && rows.some((row) => row.id === current) ? current : (rows[0]?.id ?? null),
+      );
     } catch {
       // non-fatal — the detail panel already has the latest for the open row
     }
@@ -114,14 +124,20 @@ function StaffTillContent() {
           </div>
 
           {/* Detail panel */}
-          {selectedId && (
-            <CashierTillPanel
-              key={selectedId}
-              token={token!}
-              cashier={cashiers.find((c) => c.id === selectedId)!}
-              onSaved={refreshCashiers}
-            />
-          )}
+          {selectedId &&
+            (() => {
+              const selectedCashier = cashiers.find((c) => c.id === selectedId);
+              return (
+                selectedCashier && (
+                  <CashierTillPanel
+                    key={selectedCashier.id}
+                    token={token!}
+                    cashier={selectedCashier}
+                    onSaved={refreshCashiers}
+                  />
+                )
+              );
+            })()}
         </div>
       )}
     </div>

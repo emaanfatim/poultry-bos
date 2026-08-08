@@ -1,5 +1,5 @@
 {
-  "id": "9ac4efe0-9010-4660-9f62-4f88342c3bfc",
+  "id": "f7d160ae-9231-44ce-9f42-e8aaed8bb973",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1257,6 +1257,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "branch_id": {
+          "name": "branch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
         "name": {
           "name": "name",
           "type": "text",
@@ -1278,11 +1284,17 @@
         }
       },
       "indexes": {
-        "product_categories_tenant_token_idx": {
-          "name": "product_categories_tenant_token_idx",
+        "product_categories_tenant_branch_token_idx": {
+          "name": "product_categories_tenant_branch_token_idx",
           "columns": [
             {
               "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "branch_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1307,6 +1319,19 @@
           "tableTo": "tenants",
           "columnsFrom": [
             "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "product_categories_branch_id_branches_id_fk": {
+          "name": "product_categories_branch_id_branches_id_fk",
+          "tableFrom": "product_categories",
+          "tableTo": "branches",
+          "columnsFrom": [
+            "branch_id"
           ],
           "columnsTo": [
             "id"
@@ -1609,6 +1634,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "branch_id": {
+          "name": "branch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
         "category_id": {
           "name": "category_id",
           "type": "uuid",
@@ -1636,11 +1667,17 @@
         }
       },
       "indexes": {
-        "product_sub_categories_tenant_token_idx": {
-          "name": "product_sub_categories_tenant_token_idx",
+        "product_sub_categories_tenant_branch_token_idx": {
+          "name": "product_sub_categories_tenant_branch_token_idx",
           "columns": [
             {
               "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "branch_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1665,6 +1702,19 @@
           "tableTo": "tenants",
           "columnsFrom": [
             "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "product_sub_categories_branch_id_branches_id_fk": {
+          "name": "product_sub_categories_branch_id_branches_id_fk",
+          "tableFrom": "product_sub_categories",
+          "tableTo": "branches",
+          "columnsFrom": [
+            "branch_id"
           ],
           "columnsTo": [
             "id"
@@ -1816,6 +1866,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "branch_id": {
+          "name": "branch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
         "sub_category_id": {
           "name": "sub_category_id",
           "type": "uuid",
@@ -1883,11 +1939,17 @@
         }
       },
       "indexes": {
-        "products_tenant_token_idx": {
-          "name": "products_tenant_token_idx",
+        "products_tenant_branch_token_idx": {
+          "name": "products_tenant_branch_token_idx",
           "columns": [
             {
               "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "branch_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1912,6 +1974,19 @@
           "tableTo": "tenants",
           "columnsFrom": [
             "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "products_branch_id_branches_id_fk": {
+          "name": "products_branch_id_branches_id_fk",
+          "tableFrom": "products",
+          "tableTo": "branches",
+          "columnsFrom": [
+            "branch_id"
           ],
           "columnsTo": [
             "id"
@@ -3541,6 +3616,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "branch_id": {
+          "name": "branch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
         "name": {
           "name": "name",
           "type": "text",
@@ -3594,11 +3675,17 @@
         }
       },
       "indexes": {
-        "units_tenant_code_idx": {
-          "name": "units_tenant_code_idx",
+        "units_tenant_branch_code_idx": {
+          "name": "units_tenant_branch_code_idx",
           "columns": [
             {
               "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "branch_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3623,6 +3710,19 @@
           "tableTo": "tenants",
           "columnsFrom": [
             "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "units_branch_id_branches_id_fk": {
+          "name": "units_branch_id_branches_id_fk",
+          "tableFrom": "units",
+          "tableTo": "branches",
+          "columnsFrom": [
+            "branch_id"
           ],
           "columnsTo": [
             "id"

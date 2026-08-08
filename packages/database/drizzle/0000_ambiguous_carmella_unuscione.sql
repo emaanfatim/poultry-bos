@@ -125,6 +125,7 @@ CREATE TABLE "payment_methods" (
 CREATE TABLE "product_categories" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"tenant_id" uuid NOT NULL,
+	"branch_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"token" text NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
@@ -164,6 +165,7 @@ CREATE TABLE "product_modifier_groups" (
 CREATE TABLE "product_sub_categories" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"tenant_id" uuid NOT NULL,
+	"branch_id" uuid NOT NULL,
 	"category_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"token" text NOT NULL,
@@ -181,6 +183,7 @@ CREATE TABLE "product_units" (
 CREATE TABLE "products" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"tenant_id" uuid NOT NULL,
+	"branch_id" uuid NOT NULL,
 	"sub_category_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"token" text NOT NULL,
@@ -358,6 +361,7 @@ CREATE TABLE "transactions" (
 CREATE TABLE "units" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"tenant_id" uuid NOT NULL,
+	"branch_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"code" text NOT NULL,
 	"type" text NOT NULL,
@@ -427,17 +431,20 @@ ALTER TABLE "modifier_options" ADD CONSTRAINT "modifier_options_modifier_group_i
 ALTER TABLE "modifier_options" ADD CONSTRAINT "modifier_options_linked_product_id_products_id_fk" FOREIGN KEY ("linked_product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment_methods" ADD CONSTRAINT "payment_methods_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_categories" ADD CONSTRAINT "product_categories_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "product_categories" ADD CONSTRAINT "product_categories_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_charge_category_assignment" ADD CONSTRAINT "product_charge_category_assignment_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_charge_category_assignment" ADD CONSTRAINT "product_charge_category_assignment_charge_category_id_charge_categories_id_fk" FOREIGN KEY ("charge_category_id") REFERENCES "public"."charge_categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_modifier_groups" ADD CONSTRAINT "product_modifier_groups_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_modifier_groups" ADD CONSTRAINT "product_modifier_groups_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_modifier_groups" ADD CONSTRAINT "product_modifier_groups_modifier_group_id_modifier_groups_id_fk" FOREIGN KEY ("modifier_group_id") REFERENCES "public"."modifier_groups"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_sub_categories" ADD CONSTRAINT "product_sub_categories_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "product_sub_categories" ADD CONSTRAINT "product_sub_categories_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_sub_categories" ADD CONSTRAINT "product_sub_categories_category_id_product_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."product_categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_units" ADD CONSTRAINT "product_units_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_units" ADD CONSTRAINT "product_units_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_units" ADD CONSTRAINT "product_units_unit_id_units_id_fk" FOREIGN KEY ("unit_id") REFERENCES "public"."units"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "products" ADD CONSTRAINT "products_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "products" ADD CONSTRAINT "products_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "products" ADD CONSTRAINT "products_sub_category_id_product_sub_categories_id_fk" FOREIGN KEY ("sub_category_id") REFERENCES "public"."product_sub_categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "products" ADD CONSTRAINT "products_unit_id_units_id_fk" FOREIGN KEY ("unit_id") REFERENCES "public"."units"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "quotation_line_items" ADD CONSTRAINT "quotation_line_items_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -478,6 +485,7 @@ ALTER TABLE "transactions" ADD CONSTRAINT "transactions_rounding_applied_by_user
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_voided_by_users_id_fk" FOREIGN KEY ("voided_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "units" ADD CONSTRAINT "units_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "units" ADD CONSTRAINT "units_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_branch_view_access" ADD CONSTRAINT "user_branch_view_access_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_branch_view_access" ADD CONSTRAINT "user_branch_view_access_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_branch_view_access" ADD CONSTRAINT "user_branch_view_access_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -492,19 +500,19 @@ CREATE UNIQUE INDEX "charge_categories_one_current_per_group_idx" ON "charge_cat
 CREATE INDEX "charge_rate_lines_category_idx" ON "charge_rate_lines" USING btree ("charge_category_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "currency_denominations_tenant_value_type_idx" ON "currency_denominations" USING btree ("tenant_id","value","type");--> statement-breakpoint
 CREATE UNIQUE INDEX "payment_methods_tenant_name_idx" ON "payment_methods" USING btree ("tenant_id","name");--> statement-breakpoint
-CREATE UNIQUE INDEX "product_categories_tenant_token_idx" ON "product_categories" USING btree ("tenant_id","token");--> statement-breakpoint
+CREATE UNIQUE INDEX "product_categories_tenant_branch_token_idx" ON "product_categories" USING btree ("tenant_id","branch_id","token");--> statement-breakpoint
 CREATE UNIQUE INDEX "product_charge_category_assignment_unique_idx" ON "product_charge_category_assignment" USING btree ("charge_category_id","assignment_level","target_id");--> statement-breakpoint
 CREATE INDEX "product_charge_category_assignment_target_idx" ON "product_charge_category_assignment" USING btree ("assignment_level","target_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "product_modifier_groups_product_group_idx" ON "product_modifier_groups" USING btree ("product_id","modifier_group_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "product_sub_categories_tenant_token_idx" ON "product_sub_categories" USING btree ("tenant_id","token");--> statement-breakpoint
+CREATE UNIQUE INDEX "product_sub_categories_tenant_branch_token_idx" ON "product_sub_categories" USING btree ("tenant_id","branch_id","token");--> statement-breakpoint
 CREATE UNIQUE INDEX "product_units_product_unit_idx" ON "product_units" USING btree ("product_id","unit_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "products_tenant_token_idx" ON "products" USING btree ("tenant_id","token");--> statement-breakpoint
+CREATE UNIQUE INDEX "products_tenant_branch_token_idx" ON "products" USING btree ("tenant_id","branch_id","token");--> statement-breakpoint
 CREATE INDEX "receipt_templates_tenant_branch_idx" ON "receipt_templates" USING btree ("tenant_id","branch_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "till_denomination_counts_session_denom_type_idx" ON "till_denomination_counts" USING btree ("till_session_id","denomination_id","count_type");--> statement-breakpoint
 CREATE UNIQUE INDEX "till_sessions_one_open_per_user_idx" ON "till_sessions" USING btree ("user_id") WHERE "till_sessions"."status" = 'open';--> statement-breakpoint
 CREATE INDEX "transaction_charge_lines_transaction_idx" ON "transaction_charge_lines" USING btree ("transaction_id");--> statement-breakpoint
 CREATE INDEX "transaction_charge_lines_line_item_idx" ON "transaction_charge_lines" USING btree ("transaction_line_item_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "transactions_tenant_receipt_idx" ON "transactions" USING btree ("tenant_id","receipt_number");--> statement-breakpoint
-CREATE UNIQUE INDEX "units_tenant_code_idx" ON "units" USING btree ("tenant_id","code");--> statement-breakpoint
+CREATE UNIQUE INDEX "units_tenant_branch_code_idx" ON "units" USING btree ("tenant_id","branch_id","code");--> statement-breakpoint
 CREATE UNIQUE INDEX "user_branch_view_access_user_branch_idx" ON "user_branch_view_access" USING btree ("user_id","branch_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "users_tenant_username_idx" ON "users" USING btree ("tenant_id","username");

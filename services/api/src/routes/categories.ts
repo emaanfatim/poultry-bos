@@ -31,17 +31,18 @@ const createSubCategorySchema = z.object({
 // GET /api/categories — list all categories with their subcategories
 categoryRoutes.get("/", async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const db = getDb();
 
   const cats = await db
     .select()
     .from(productCategories)
-    .where(eq(productCategories.tenantId, tenantId));
+    .where(and(eq(productCategories.tenantId, tenantId), eq(productCategories.branchId, branchId)));
 
   const subs = await db
     .select()
     .from(productSubCategories)
-    .where(eq(productSubCategories.tenantId, tenantId));
+    .where(and(eq(productSubCategories.tenantId, tenantId), eq(productSubCategories.branchId, branchId)));
 
   // Nest subcategories under their parent category
   const result = cats.map((cat) => ({
@@ -55,6 +56,7 @@ categoryRoutes.get("/", async (c) => {
 // POST /api/categories — create a new category
 categoryRoutes.post("/", async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const body = await c.req.json();
   const parsed = createCategorySchema.safeParse(body);
 
@@ -68,6 +70,7 @@ categoryRoutes.post("/", async (c) => {
     .insert(productCategories)
     .values({
       tenantId,
+      branchId,
       name: parsed.data.name,
       token: parsed.data.token,
     })
@@ -79,15 +82,20 @@ categoryRoutes.post("/", async (c) => {
 // DELETE /api/categories/:id — delete a category
 categoryRoutes.delete("/:id", async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const id = c.req.param("id");
   const db = getDb();
 
-  // Check it belongs to this tenant
+  // Check it belongs to this tenant + branch
   const [existing] = await db
     .select()
     .from(productCategories)
     .where(
-      and(eq(productCategories.id, id), eq(productCategories.tenantId, tenantId))
+      and(
+        eq(productCategories.id, id),
+        eq(productCategories.tenantId, tenantId),
+        eq(productCategories.branchId, branchId),
+      )
     )
     .limit(1);
 
@@ -98,7 +106,11 @@ categoryRoutes.delete("/:id", async (c) => {
   await db
     .delete(productCategories)
     .where(
-      and(eq(productCategories.id, id), eq(productCategories.tenantId, tenantId))
+      and(
+        eq(productCategories.id, id),
+        eq(productCategories.tenantId, tenantId),
+        eq(productCategories.branchId, branchId),
+      )
     );
 
   return c.json({ success: true });
@@ -109,6 +121,7 @@ categoryRoutes.delete("/:id", async (c) => {
 // POST /api/categories/subcategories — create a subcategory
 categoryRoutes.post("/subcategories", async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const body = await c.req.json();
   const parsed = createSubCategorySchema.safeParse(body);
 
@@ -116,7 +129,7 @@ categoryRoutes.post("/subcategories", async (c) => {
     return c.json({ error: parsed.error.errors[0]?.message }, 400);
   }
 
-  // Verify the parent category belongs to this tenant
+  // Verify the parent category belongs to this tenant + branch
   const db = getDb();
   const [cat] = await db
     .select()
@@ -124,7 +137,8 @@ categoryRoutes.post("/subcategories", async (c) => {
     .where(
       and(
         eq(productCategories.id, parsed.data.categoryId),
-        eq(productCategories.tenantId, tenantId)
+        eq(productCategories.tenantId, tenantId),
+        eq(productCategories.branchId, branchId),
       )
     )
     .limit(1);
@@ -137,6 +151,7 @@ categoryRoutes.post("/subcategories", async (c) => {
     .insert(productSubCategories)
     .values({
       tenantId,
+      branchId,
       categoryId: parsed.data.categoryId,
       name: parsed.data.name,
       token: parsed.data.token,
@@ -149,6 +164,7 @@ categoryRoutes.post("/subcategories", async (c) => {
 // DELETE /api/categories/subcategories/:id — delete a subcategory
 categoryRoutes.delete("/subcategories/:id", async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const id = c.req.param("id");
   const db = getDb();
 
@@ -158,7 +174,8 @@ categoryRoutes.delete("/subcategories/:id", async (c) => {
     .where(
       and(
         eq(productSubCategories.id, id),
-        eq(productSubCategories.tenantId, tenantId)
+        eq(productSubCategories.tenantId, tenantId),
+        eq(productSubCategories.branchId, branchId),
       )
     )
     .limit(1);
@@ -172,7 +189,8 @@ categoryRoutes.delete("/subcategories/:id", async (c) => {
     .where(
       and(
         eq(productSubCategories.id, id),
-        eq(productSubCategories.tenantId, tenantId)
+        eq(productSubCategories.tenantId, tenantId),
+        eq(productSubCategories.branchId, branchId),
       )
     );
 

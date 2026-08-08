@@ -85,7 +85,13 @@ export async function loadProductChargeContext(
       subCategoryId: products.subCategoryId,
     })
     .from(products)
-    .where(and(eq(products.id, productId), eq(products.tenantId, tenantId)))
+    .where(
+      and(
+        eq(products.id, productId),
+        eq(products.tenantId, tenantId),
+        eq(products.branchId, branchId),
+      ),
+    )
     .limit(1);
 
   if (!row) return null;

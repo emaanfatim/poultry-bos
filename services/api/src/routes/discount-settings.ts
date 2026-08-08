@@ -224,7 +224,7 @@ discountSettingsRoutes.patch("/:userId", async (c) => {
   const db = getDb();
 
   const [target] = await db
-    .select({ id: users.id })
+    .select({ id: users.id, branchId: users.branchId })
     .from(users)
     .where(and(eq(users.id, userId), eq(users.tenantId, tenantId), eq(users.role, "cashier")))
     .limit(1);
@@ -233,13 +233,15 @@ discountSettingsRoutes.patch("/:userId", async (c) => {
     return c.json({ error: "Cashier not found" }, 404);
   }
 
-  // Validate every referenced product actually belongs to this tenant
-  // before touching anything, so a bad id can't partially apply.
+  // Validate every referenced product actually belongs to this cashier's own
+  // branch (not just the tenant) — products are branch-scoped, and a
+  // restriction pointing at another branch's product would never match
+  // anything that cashier can actually sell.
   if (parsed.data.allowedProductIds) {
     const rows = await db
       .select({ id: products.id })
       .from(products)
-      .where(eq(products.tenantId, tenantId));
+      .where(and(eq(products.tenantId, tenantId), eq(products.branchId, target.branchId)));
     const validIds = new Set(rows.map((r) => r.id));
     const invalid = parsed.data.allowedProductIds.filter((id) => !validIds.has(id));
     if (invalid.length > 0) {
@@ -247,12 +249,12 @@ discountSettingsRoutes.patch("/:userId", async (c) => {
     }
   }
 
-  // Same check for categories — belongs-to-tenant before anything is touched.
+  // Same check for categories — belongs to this cashier's own branch.
   if (parsed.data.allowedCategoryIds) {
     const rows = await db
       .select({ id: productCategories.id })
       .from(productCategories)
-      .where(eq(productCategories.tenantId, tenantId));
+      .where(and(eq(productCategories.tenantId, tenantId), eq(productCategories.branchId, target.branchId)));
     const validIds = new Set(rows.map((r) => r.id));
     const invalid = parsed.data.allowedCategoryIds.filter((id) => !validIds.has(id));
     if (invalid.length > 0) {

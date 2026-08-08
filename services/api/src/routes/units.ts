@@ -13,12 +13,13 @@ unitsRoutes.use("*", authMiddleware);
 // GET /units — list all units for this tenant
 unitsRoutes.get("/", async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const db = getDb();
 
   const allUnits = await db
     .select()
     .from(units)
-    .where(eq(units.tenantId, tenantId))
+    .where(and(eq(units.tenantId, tenantId), eq(units.branchId, branchId)))
     .orderBy(units.type, units.name);
 
   // Build a map so we can attach baseUnitCode to derived units
@@ -42,12 +43,13 @@ unitsRoutes.get("/", async (c) => {
 // GET /units/active — only active units (used by cashier screens)
 unitsRoutes.get("/active", async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const db = getDb();
 
   const activeUnits = await db
     .select()
     .from(units)
-    .where(and(eq(units.tenantId, tenantId), eq(units.isActive, true)))
+    .where(and(eq(units.tenantId, tenantId), eq(units.branchId, branchId), eq(units.isActive, true)))
     .orderBy(units.type, units.name);
 
   const codeMap = Object.fromEntries(activeUnits.map((u) => [u.id, u.code]));
@@ -82,6 +84,7 @@ const createUnitSchema = z.object({
 // POST /units — owner creates a new unit
 unitsRoutes.post("/", requireOwner, async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const body = await c.req.json();
   const parsed = createUnitSchema.safeParse(body);
 
@@ -92,10 +95,29 @@ unitsRoutes.post("/", requireOwner, async (c) => {
 
   const db = getDb();
 
+  // Base unit (if any) must belong to this tenant + branch
+  if (parsed.data.baseUnitId) {
+    const [baseUnit] = await db
+      .select({ id: units.id })
+      .from(units)
+      .where(
+        and(
+          eq(units.id, parsed.data.baseUnitId),
+          eq(units.tenantId, tenantId),
+          eq(units.branchId, branchId),
+        ),
+      )
+      .limit(1);
+    if (!baseUnit) {
+      return c.json({ error: "Base unit not found" }, 404);
+    }
+  }
+
   const [unit] = await db
     .insert(units)
     .values({
       tenantId,
+      branchId,
       name: parsed.data.name,
       code: parsed.data.code,
       type: parsed.data.type,
@@ -117,6 +139,7 @@ const updateUnitSchema = z.object({
 // PUT /units/:id — owner edits a unit name or conversion factor
 unitsRoutes.put("/:id", requireOwner, async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const unitId = c.req.param("id");
   if (!unitId) {
     return c.json({ error: "Missing id" }, 400);
@@ -138,7 +161,7 @@ unitsRoutes.put("/:id", requireOwner, async (c) => {
         ? { conversionFactor: parsed.data.conversionFactor }
         : {}),
     })
-    .where(and(eq(units.id, unitId), eq(units.tenantId, tenantId)))
+    .where(and(eq(units.id, unitId), eq(units.tenantId, tenantId), eq(units.branchId, branchId)))
     .returning();
 
   if (!updated) return c.json({ error: "Unit not found" }, 404);
@@ -148,6 +171,7 @@ unitsRoutes.put("/:id", requireOwner, async (c) => {
 // PATCH /units/:id/toggle — owner toggles active/inactive
 unitsRoutes.patch("/:id/toggle", requireOwner, async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const unitId = c.req.param("id");
   if (!unitId) {
     return c.json({ error: "Missing id" }, 400);
@@ -157,7 +181,7 @@ unitsRoutes.patch("/:id/toggle", requireOwner, async (c) => {
   const [current] = await db
     .select()
     .from(units)
-    .where(and(eq(units.id, unitId), eq(units.tenantId, tenantId)))
+    .where(and(eq(units.id, unitId), eq(units.tenantId, tenantId), eq(units.branchId, branchId)))
     .limit(1);
 
   if (!current) return c.json({ error: "Unit not found" }, 404);
@@ -167,7 +191,14 @@ unitsRoutes.patch("/:id/toggle", requireOwner, async (c) => {
     const dependents = await db
       .select()
       .from(units)
-      .where(and(eq(units.baseUnitId, unitId), eq(units.isActive, true)));
+      .where(
+        and(
+          eq(units.baseUnitId, unitId),
+          eq(units.tenantId, tenantId),
+          eq(units.branchId, branchId),
+          eq(units.isActive, true),
+        ),
+      );
     if (dependents.length > 0) {
       return c.json(
         { error: `Cannot deactivate — ${dependents.length} unit(s) convert into this unit` },
@@ -179,7 +210,7 @@ unitsRoutes.patch("/:id/toggle", requireOwner, async (c) => {
   const [updated] = await db
     .update(units)
     .set({ isActive: !current.isActive })
-    .where(and(eq(units.id, unitId), eq(units.tenantId, tenantId)))
+    .where(and(eq(units.id, unitId), eq(units.tenantId, tenantId), eq(units.branchId, branchId)))
     .returning();
 
   return c.json({ unit: updated });
@@ -188,6 +219,7 @@ unitsRoutes.patch("/:id/toggle", requireOwner, async (c) => {
 // DELETE /units/:id — owner permanently removes a unit that's unused
 unitsRoutes.delete("/:id", requireOwner, async (c) => {
   const tenantId = c.get("tenantId");
+  const branchId = c.get("branchId");
   const unitId = c.req.param("id");
   if (!unitId) {
     return c.json({ error: "Missing id" }, 400);
@@ -197,7 +229,7 @@ unitsRoutes.delete("/:id", requireOwner, async (c) => {
   const [existing] = await db
     .select()
     .from(units)
-    .where(and(eq(units.id, unitId), eq(units.tenantId, tenantId)))
+    .where(and(eq(units.id, unitId), eq(units.tenantId, tenantId), eq(units.branchId, branchId)))
     .limit(1);
 
   if (!existing) {
@@ -208,7 +240,7 @@ unitsRoutes.delete("/:id", requireOwner, async (c) => {
   const dependents = await db
     .select({ id: units.id })
     .from(units)
-    .where(and(eq(units.baseUnitId, unitId), eq(units.tenantId, tenantId)))
+    .where(and(eq(units.baseUnitId, unitId), eq(units.tenantId, tenantId), eq(units.branchId, branchId)))
     .limit(1);
 
   if (dependents.length > 0) {
@@ -222,7 +254,7 @@ unitsRoutes.delete("/:id", requireOwner, async (c) => {
   const priceUses = await db
     .select({ id: products.id })
     .from(products)
-    .where(and(eq(products.unitId, unitId), eq(products.tenantId, tenantId)))
+    .where(and(eq(products.unitId, unitId), eq(products.tenantId, tenantId), eq(products.branchId, branchId)))
     .limit(1);
 
   if (priceUses.length > 0) {
@@ -236,7 +268,14 @@ unitsRoutes.delete("/:id", requireOwner, async (c) => {
   const sellUses = await db
     .select({ id: productUnits.id })
     .from(productUnits)
-    .where(and(eq(productUnits.unitId, unitId), eq(productUnits.tenantId, tenantId)))
+    .innerJoin(products, eq(productUnits.productId, products.id))
+    .where(
+      and(
+        eq(productUnits.unitId, unitId),
+        eq(productUnits.tenantId, tenantId),
+        eq(products.branchId, branchId),
+      ),
+    )
     .limit(1);
 
   if (sellUses.length > 0) {
@@ -248,7 +287,7 @@ unitsRoutes.delete("/:id", requireOwner, async (c) => {
 
   await db
     .delete(units)
-    .where(and(eq(units.id, unitId), eq(units.tenantId, tenantId)));
+    .where(and(eq(units.id, unitId), eq(units.tenantId, tenantId), eq(units.branchId, branchId)));
 
   return c.json({ success: true });
 });
