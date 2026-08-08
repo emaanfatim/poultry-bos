@@ -18,22 +18,6 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-@media print {
-  body {
-    background: white;
-  }
-
-  .print\:hidden {
-    display: none !important;
-  }
-
-  /* When printing from the kitchen ticket page, only show the ticket body */
-  #kitchen-ticket-print {
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    font-size: 13px;
-  }
 /* ---------------------------------------------------------------------
    Theme system: appearance (light/dark), accent color, display density.
    Values are set as data-attributes on <html> by ThemeProvider, and read
@@ -120,4 +104,21 @@ html[data-density="comfy"] {
   --density-px: 1rem;
   --density-gap: 0.5rem;
 }
+
+@media print {
+  body {
+    background: white;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* When printing from the kitchen ticket page, only show the ticket body */
+  #kitchen-ticket-print {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    font-size: 13px;
+  }
 }
